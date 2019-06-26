@@ -6,7 +6,11 @@ Sagemath codes for various Tamari-related objects
 
 - `nu_tamari_lattice.py`: a function that returns a generalized Tamari lattice indexed by a directed path
 
-- `lactree.py`: a class of LAC-trees defined in [The Steep-Bounce Zeta Map in Parabolic Cataland](https://arxiv.org/abs/1903.08515)
+- `lactree.py`: a class of LAC-trees defined in [The Steep-Bounce Zeta Map in Parabolic Cataland](https://arxiv.org/abs/1903.08515), with bijections to
+  
+  * bounce pairs
+  * steep pairs
+  * walks in quadrant
 
 ## Usage
 
@@ -18,5 +22,5 @@ Good luck!
 
 ## TODO
 
-- Add more objects (alpha-non-crossing partitions, lattice paths)
+- Add more objects (alpha-non-crossing partitions)
 - Random generation (hard, may be slow)

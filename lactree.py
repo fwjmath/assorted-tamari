@@ -315,3 +315,75 @@ class LACTree:
         perm = []
         map(perm.extend, regions)
         return (perm, self.alpha)
+        
+    r"""
+    Returns an LAC-tree in bijection with the given walk in the quadrant with
+    step sets [0, 1], [1, -1], [-1, 1]. Checks the input for sanity.
+    
+    INPUT:
+    
+    - ``walk``: a walk in the quadrant
+    
+    OUTPUT:
+    
+    An LAC-tree in bijection with this (alpha,231)-avoiding permutation
+    """
+    @staticmethod
+    def from_walk_in_quadrant(walk):
+        # check step set
+        for s in walk:
+            if (0 == s[0]) and (1 == s[1]):
+                continue
+            if (1 == s[0]) and (-1 == s[1]):
+                continue
+            if (-1 == s[0]) and (1 == s[1]):
+                continue
+            raise ValueError('Incorrect step set')
+        
+        # check quandrant and endpoint
+        myx, myy = 0, 0
+        for s in walk:
+            myx += s[0]
+            myy += s[1]
+            if (myx < 0) or (myy < 0):
+                raise ValueError('Walk out of quadrant')
+        if myy != 0:
+            raise ValueError('Walk not ending on x-axis')
+        
+        # convert to steep pair
+        steep, path = [], []
+        for s in walk:
+            path.append((s[1]+1)//2)
+            if (0 == s[0]):
+                steep.append(1)
+            elif (-1 == s[0]):
+                steep += [0, 1]
+        steep += [0] * (len(path) - len(steep))
+        
+        return LACTree.from_steep_pair(steep, path)
+    
+    r"""
+    Returns a walk in the quadrant in bijection with the LAC-tree
+    
+    OUTPUT:
+    
+    A walk in the quadrant with step sets [0, 1], [1, -1], [-1, 1]
+    """
+    def to_walk_in_quadrant(self):
+        steep, path = self.to_steep_pair()
+        walk = [[0, 1]]
+        steepptr = 0
+        for i in range(1, len(path)):
+            x = path[i]
+            if 0 == x:
+                walk.append([1, -1])
+            else:
+                steepptr += 1
+                while steep[steepptr] != 1:
+                    steepptr += 1
+                if 0 == steep[steepptr-1]:
+                    walk.append([-1, 1])
+                else:
+                    walk.append([0, 1])
+        return walk
+    
