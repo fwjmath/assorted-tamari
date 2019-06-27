@@ -101,6 +101,12 @@ class LACTree:
         return
 
     r"""
+    Returns a plot of the shape of the LAC-tree
+    """
+    def shape_plot(self):
+        return self.tree.shape().plot()
+
+    r"""
     Returns an LAC-tree in bijection with the given bounce pair. A check is
     performed for validity.
     
@@ -386,4 +392,50 @@ class LACTree:
                 else:
                     walk.append([0, 1])
         return walk
+    
+    r"""
+    Returns a random LAC-tree
+    
+    INPUT:
+    
+    - ``n`` -- An expected size of the random LAC-tree
+    
+    OUTPUT:
+    
+    A random LAC-tree, drawn uniformly from LAC-trees of the same size. The size
+    can vary between ``0.9n`` and ``1.5n``. The algorithm is based on rejection
+    sampling on walks in the quadrant.
+    """
+    @staticmethod
+    def random_element(nn):
+        
+        # a function generating random walks
+        def random_walk_in_quadrant(n):
+            lower = int(n*0.9)
+            upper = int(n*1.5)
+            stepset = [[0, 1], [1, -1], [-1, 1]]
+            flag = False
+            walk = []
+            while not flag:
+                walk = []
+                wlen = 0
+                x, y = 0, 0
+                while wlen < upper:
+                    step = choice(stepset)
+                    x += step[0]
+                    y += step[1]
+                    wlen += 1
+                    if (x < 0) or (y < 0):
+                        break
+                    walk.append(step)
+                    if (0 == y) and (wlen > lower):
+                        flag = True
+                        break
+            return walk
+        
+        if nn > 60:
+            print("Caution: exponential runtime, may take some time.")
+        
+        return LACTree.from_walk_in_quadrant(random_walk_in_quadrant(nn*2))
+    
     

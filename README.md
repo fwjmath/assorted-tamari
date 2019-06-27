@@ -11,6 +11,8 @@ Sagemath codes for various Tamari-related objects
   * bounce pairs
   * steep pairs
   * walks in quadrant
+  
+  A functionality of (exponential time) random generation is also provided. Scale up little by little when using it!
 
 ## Usage
 
@@ -23,4 +25,3 @@ Good luck!
 ## TODO
 
 - Add more objects (alpha-non-crossing partitions)
-- Random generation (hard, may be slow)
