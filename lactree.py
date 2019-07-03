@@ -28,22 +28,22 @@ from sage.combinat.dyck_word import DyckWord
 
 class LACTree:
     
-    r"""
-    Checks if T is compatible with alpha. If so, a color vector is returned. 
-    Otherwise, None is returned.
-    
-    INPUT:
-    
-    - ``T`` -- an ordered tree
-    - ``alpha`` -- a composition indicating colors
-    
-    OUTPUT:
-    
-    A pair ``(Tc, color)`` with ``Tc`` the same tree with canonical labeling, 
-    and ``color`` the color vector
-    """
     @staticmethod
     def __coloring__(T, alpha):
+        r"""
+        Checks if T is compatible with alpha. If so, a color vector is returned.
+        Otherwise, None is returned.
+        
+        INPUT:
+        
+        - ``T`` -- an ordered tree
+        - ``alpha`` -- a composition indicating colors
+        
+        OUTPUT:
+        
+        A pair ``(Tc, color)`` with ``Tc`` the same tree with canonical 
+        labeling, and ``color`` the color vector
+        """
         n = sum(alpha)
         if n+1 != T.node_number():
             raise ValueError('Inconsistent sizes of parameters')
@@ -71,19 +71,19 @@ class LACTree:
         #return
         return (Tc, color)
     
-    r"""
-    Constructor of the class, checks if the parameters are compatible
-    
-    INPUT:
-    
-    - ``T``: an ordered tree
-    - ``alpha``: a composition indicating the number of nodes for each color
-    
-    OUTPUT:
-    
-    If the input is compatible, then return an object of ``LACTree``
-    """
     def __init__(self, T, alpha):
+        r"""
+        Constructor of the class, checks if the parameters are compatible
+        
+        INPUT:
+        
+        - ``T``: an ordered tree
+        - ``alpha``: a composition indicating the number of nodes for each color
+        
+        OUTPUT:
+        
+        If the input is compatible, then return an object of ``LACTree``
+        """
         check = self.__coloring__(T,alpha)
         if check is None:
             raise ValueError('Incompatible parameters')
@@ -91,36 +91,36 @@ class LACTree:
             self.tree, self.color = check
             self.alpha = alpha
     
-    r"""
-    Shows a pdf file of the LAC-tree (because Sagemath cannot plot a tree with
-    repeated labels)
-    """
     def plot(self):
+        r"""
+        Shows a pdf file of the LAC-tree (because Sagemath cannot plot a tree 
+        with repeated labels)
+        """
         # Sage not yet able to plot a tree with repeating labels!
         view(self.tree.map_labels(lambda x: self.color[x]))
         return
 
-    r"""
-    Returns a plot of the shape of the LAC-tree
-    """
     def shape_plot(self):
+        r"""
+        Returns a plot of the shape of the LAC-tree
+        """
         return self.tree.shape().plot()
 
-    r"""
-    Returns an LAC-tree in bijection with the given bounce pair. A check is
-    performed for validity.
-    
-    INPUT:
-    
-    - ``dyck``: a Dyck path in the 0,1 format
-    - ``alpha``: a composition indicating the bounce path
-    
-    OUTPUT:
-    
-    An LAC-tree in bijection with this bounce pair
-    """
     @staticmethod
     def from_bounce_pair(dyck, alpha):
+        r"""
+        Returns an LAC-tree in bijection with the given bounce pair. A check is
+        performed for validity.
+        
+        INPUT:
+        
+        - ``dyck``: a Dyck path in the 0,1 format
+        - ``alpha``: a composition indicating the bounce path
+        
+        OUTPUT:
+        
+        An LAC-tree in bijection with this bounce pair
+        """
         n = sum(alpha)
         if n*2 != len(dyck):
             raise ValueError('Inconsistent sizes of parameters')
@@ -163,15 +163,15 @@ class LACTree:
         
         return LACTree(T, alpha)
     
-    r"""
-    Returns a bounce pair in bijection with the LAC-tree
-    
-    OUTPUT:
-    
-    A pair ``(path, alpha)``, where ``path`` is a Dyck path in 0,1 format,
-    and ``alpha`` the composition of the bounce path.
-    """
     def to_bounce_pair(self):
+        r"""
+        Returns a bounce pair in bijection with the LAC-tree
+        
+        OUTPUT:
+        
+        A pair ``(path, alpha)``, where ``path`` is a Dyck path in 0,1 format,
+        and ``alpha`` the composition of the bounce path.
+        """
         n = sum(self.alpha)
         l = len(self.alpha)
         path = [1] * len(self.tree)
@@ -185,21 +185,21 @@ class LACTree:
                 path += [1] * k
         return (path, self.alpha)
     
-    r"""
-    Returns an LAC-tree in bijection with the given steep pair. A check is
-    performed for validity.
-    
-    INPUT:
-    
-    - ``steep``: a steep path in the 0,1 format
-    - ``path``: a Dyck path in the 0,1 format
-    
-    OUTPUT:
-    
-    An LAC-tree in bijection with this steep pair
-    """
     @staticmethod    
     def from_steep_pair(steep, path):
+        r"""
+        Returns an LAC-tree in bijection with the given steep pair. A check is
+        performed for validity.
+        
+        INPUT:
+        
+        - ``steep``: a steep path in the 0,1 format
+        - ``path``: a Dyck path in the 0,1 format
+        
+        OUTPUT:
+        
+        An LAC-tree in bijection with this steep pair
+        """
         if len(steep) != len(path):
             raise ValueError('Inconsistent sizes of parameters')
         n = len(path) // 2
@@ -255,15 +255,15 @@ class LACTree:
         alpha = map(lambda x: colorcount[x[0]], alpha)
         return LACTree(Tc.shape().left_right_symmetry(), alpha)
     
-    r"""
-    Returns a steep pair in bijection with the LAC-tree
-    
-    OUTPUT:
-    
-    A pair ``(steep, path)``, where ``steep`` is a steep path in 0,1 format,
-    and ``path`` a Dyck path in 0,1 format.
-    """
     def to_steep_pair(self):
+        r"""
+        Returns a steep pair in bijection with the LAC-tree
+        
+        OUTPUT:
+        
+        A pair ``(steep, path)``, where ``steep`` is a steep path in 0,1 format,
+        and ``path`` a Dyck path in 0,1 format.
+        """
         mirtree = self.tree.left_right_symmetry()
         path = mirtree.to_dyck_word()
         colorseen = {}
@@ -279,34 +279,35 @@ class LACTree:
         steep = steep[1:]
         return (steep, list(path))
         
-    r"""
-    Returns an LAC-tree in bijection with the given (alpha,231)-avoiding 
-    permutation. Do not provide any check (yet).
-    
-    INPUT:
-    
-    - ``perm``: a supposedly (alpha,231)-avoiding permutation
-    - ``alpha``: a composition indicating the parabolic quotient
-    
-    OUTPUT:
-    
-    An LAC-tree in bijection with this (alpha,231)-avoiding permutation
-    """
     @staticmethod
     def from_permutation(perm, alpha):
+        r"""
+        Returns an LAC-tree in bijection with the given (alpha,231)-avoiding 
+        permutation. Do not provide any check (yet).
+        
+        INPUT:
+        
+        - ``perm``: a supposedly (alpha,231)-avoiding permutation
+        - ``alpha``: a composition indicating the parabolic quotient
+        
+        OUTPUT:
+        
+        An LAC-tree in bijection with this (alpha,231)-avoiding permutation
+        """
         BT = Permutation(perm).binary_search_tree()
         T = BT.to_ordered_tree_right_branch()
         return LACTree(T, alpha)
     
-    r"""
-    Returns an (alpha,231)-avoiding in bijection with the LAC-tree
-    
-    OUTPUT:
-    
-    A pair ``(perm, alpha)``, where ``perm`` is an (alpha,231)-avoiding 
-    permutation, and ``alpha`` a composition indicating the parabolic quotient
-    """
     def to_permutation(self):
+        r"""
+        Returns an (alpha,231)-avoiding in bijection with the LAC-tree
+        
+        OUTPUT:
+        
+        A pair ``(perm, alpha)``, where ``perm`` is an (alpha,231)-avoiding 
+        permutation, and ``alpha`` a composition indicating the parabolic 
+        quotient.
+        """
         n = sum(self.alpha)
         l = len(self.alpha)
         labels = {}
@@ -322,20 +323,20 @@ class LACTree:
         map(perm.extend, regions)
         return (perm, self.alpha)
         
-    r"""
-    Returns an LAC-tree in bijection with the given walk in the quadrant with
-    step sets [0, 1], [1, -1], [-1, 1]. Checks the input for sanity.
-    
-    INPUT:
-    
-    - ``walk``: a walk in the quadrant
-    
-    OUTPUT:
-    
-    An LAC-tree in bijection with this (alpha,231)-avoiding permutation
-    """
     @staticmethod
     def from_walk_in_quadrant(walk):
+        r"""
+        Returns an LAC-tree in bijection with the given walk in the quadrant
+        with step sets [0, 1], [1, -1], [-1, 1]. Checks the input for sanity.
+        
+        INPUT:
+        
+        - ``walk``: a walk in the quadrant
+        
+        OUTPUT:
+        
+        An LAC-tree in bijection with this (alpha,231)-avoiding permutation
+        """
         # check step set
         for s in walk:
             if (0 == s[0]) and (1 == s[1]):
@@ -368,14 +369,14 @@ class LACTree:
         
         return LACTree.from_steep_pair(steep, path)
     
-    r"""
-    Returns a walk in the quadrant in bijection with the LAC-tree
-    
-    OUTPUT:
-    
-    A walk in the quadrant with step sets [0, 1], [1, -1], [-1, 1]
-    """
     def to_walk_in_quadrant(self):
+        r"""
+        Returns a walk in the quadrant in bijection with the LAC-tree
+        
+        OUTPUT:
+        
+        A walk in the quadrant with step sets [0, 1], [1, -1], [-1, 1]
+        """
         steep, path = self.to_steep_pair()
         walk = [[0, 1]]
         steepptr = 0
@@ -393,22 +394,21 @@ class LACTree:
                     walk.append([0, 1])
         return walk
     
-    r"""
-    Returns a random LAC-tree
-    
-    INPUT:
-    
-    - ``n`` -- An expected size of the random LAC-tree
-    
-    OUTPUT:
-    
-    A random LAC-tree, drawn uniformly from LAC-trees of the same size. The size
-    can vary between ``0.9n`` and ``1.5n``. The algorithm is based on rejection
-    sampling on walks in the quadrant.
-    """
     @staticmethod
     def random_element(nn):
+        r"""
+        Returns a random LAC-tree
         
+        INPUT:
+        
+        - ``n`` -- An expected size of the random LAC-tree
+        
+        OUTPUT:
+        
+        A random LAC-tree, drawn uniformly from LAC-trees of the same size. The
+        size can vary between ``0.9n`` and ``1.5n``. The algorithm is based on
+        rejection sampling on walks in the quadrant.
+        """
         # a function generating random walks
         def random_walk_in_quadrant(n):
             lower = int(n*0.9)
