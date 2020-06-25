@@ -116,16 +116,22 @@ def NuTamariLattice(v):
         Given a valley p, this function does the v-Tamari switch to obtain a 
         covering element.
         """
+        # Initial coordinates and horizontal distance
         x = [e[:p+1].count(0), e[:p+1].count(1)]
         hdist = lvl[x[1]] - x[0]
+        
+        # Find the next point with the same horizontal distance
         for j in range(p+1, len(e)):
             x[e[j]] += 1
             if hdist == (lvl[x[1]] - x[0]): 
                 break
+        
+        # Construct a new path with the portion switched
         e1 = list(e)
         for i in range(p,j):
             e1[i] = e1[i+1]
         e1[j] = 0
+        
         return tuple(e1)
             
     def get_cover_elem(e):
@@ -138,21 +144,28 @@ def NuTamariLattice(v):
 def pathpair_to_dyck(u, v):
     r"""
     This function converts an pair of lattice paths ``u`` and ``v`` starting
-    and ending at the same point, regarded as an element in Tam(v), into a Dyck
-    path that is the corresponding element in the classical Tamari lattice.
+    and ending at the same point, regarded as an element in Tam(``v``), into a 
+    Dyck path that is the corresponding element in the classical Tamari lattice.
     
     INPUT:
     
-    - ``u``
+    - ``u`` -- a list of integers representing a lattice path
+    - ``v`` -- a list of integers representing a lattice path that ends at the
+               same point as ``u`` and staying weakly below ``u``
+    
+    OUTPUT:
+    
+    A Dyck path that corresponds to the element ``u`` in the nu-Tamari lattice
+    Tam(``v``)
     """
     
     # Check basic requirements
     checkpath(u)
     checkpath(v)
     if len(u) != len(v):
-        raise ValueError("The two paths should have the same length.")
+        raise ValueError("The two input paths should have the same length.")
     if u.count(0) != v.count(1):
-        raise ValueError("The two paths should end at the same point.")
+        raise ValueError("The two input paths should end at the same point.")
     
     ulvl = get_level_list(u)
     vlvl = get_level_list(v)
@@ -161,7 +174,7 @@ def pathpair_to_dyck(u, v):
     # Check whether u is weakly above v
     for i in range(h):
         if ulvl[i] > vlvl[i]:
-            raise ValueError("The path u should be weakly above the path v.")
+            raise ValueError("The first path should be weakly above the second path.")
     
     # The bijection: type given by v, and descent lengths given by consecuted
     # east steps in u
@@ -178,3 +191,48 @@ def pathpair_to_dyck(u, v):
     p.append(1)
     p += [0] * (ulvl[ptr] - prev + 1)
     return p
+    
+def dyck_to_pathpair(p):
+    r"""
+    This function converts a Dyck path ``p``, as an element in the classical 
+    Tamari lattice, into a pair of lattice paths ``u`` and ``v``, considered
+    as an element in the nu-Tamari lattice Tam(``v``).
+    
+    INPUT:
+    
+    - ``p`` -- a list of integers representing a Dyck path
+    
+    OUTPUT:
+    
+    A pair of lattice paths ``(u, v)`` with the same ending point, such that
+    ``p`` corresponds to the element ``u`` in Tam(``v``)
+    """
+    
+    # Check basic requirements
+    checkpath(p)
+    if p.count(0) != p.count(1):
+        raise ValueError("The path p must be a Dyck path")
+    
+    n = p.count(1)
+    u, v = [], []
+    
+    # v corresponds to the type of p
+    # u corresponds to consecutive down steps of p
+    i = 0
+    while i < 2*n: # Stopping only when p[i] == 1
+        v.append(1 - p[i+1])
+        if p[i+1] == 0:
+            cnt = 0
+            i += 1
+            while (i < 2*n) and (p[i] == 0):
+                cnt += 1
+                i += 1
+            u += [0] * (cnt - 1)
+            u.append(1)
+        else:
+            i += 1
+    
+    # The last steps in both paths are useless (always 1)
+    u.pop()
+    v.pop()
+    return (u, v)
