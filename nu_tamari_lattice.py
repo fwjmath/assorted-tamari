@@ -138,7 +138,7 @@ def NuTamariLattice(v):
         return [swap(e,x) for x in range(len(v)-1) if (e[x] == 0) and (e[x+1] == 1)]
             
     checkpath(v)
-    lvl = get_level_list()
+    lvl = get_level_list(v)
     return LatticePoset(dict((e, get_cover_elem(e)) for e in generate_elements()))
 
 def pathpair_to_dyck(u, v):

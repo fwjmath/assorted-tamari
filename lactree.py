@@ -252,7 +252,7 @@ class LACTree:
                 colorptr -= 1
         
         alpha = sorted(colorlast.items(), key = lambda x: x[1])
-        alpha = map(lambda x: colorcount[x[0]], alpha)
+        alpha = list(map(lambda x: colorcount[x[0]], alpha))
         return LACTree(Tc.shape().left_right_symmetry(), alpha)
     
     def to_steep_pair(self):
@@ -320,7 +320,8 @@ class LACTree:
         for i in range(2, n+2):
             regions[self.color[i]].append(labels[i])
         perm = []
-        map(perm.extend, regions)
+        for r in regions:
+            perm.extend(r)
         return (perm, self.alpha)
         
     @staticmethod
