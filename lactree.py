@@ -25,6 +25,8 @@ REFERENCES:
 
 from sage.combinat.ordered_tree import LabelledOrderedTree, OrderedTree
 from sage.combinat.dyck_word import DyckWord
+from sage.combinat.permutation import Permutation
+from treeplot import TreePlot
 
 class LACTree:
     
@@ -91,14 +93,29 @@ class LACTree:
             self.tree, self.color = check
             self.alpha = alpha
     
+    def tree_shape(self):
+        r"""
+        Returns the plane tree associated to the LAC tree
+        """
+        return self.tree
+    
+    def comp(self):
+        r"""
+        Returns the composition associated to the LAC tree
+        """
+        return self.alpha
+    
+    def region_coloring(self):
+        r"""
+        Returns the coloring for regions on the LAC tree
+        """
+        return self.color
+    
     def plot(self):
         r"""
-        Shows a pdf file of the LAC-tree (because Sagemath cannot plot a tree 
-        with repeated labels)
+        Plot the LAC tree using the custom class TreePlot
         """
-        # Sage not yet able to plot a tree with repeating labels!
-        view(self.tree.map_labels(lambda x: self.color[x]))
-        return
+        return TreePlot.plot(self.tree.map_labels(lambda x: self.color[x]))
 
     def shape_plot(self):
         r"""
