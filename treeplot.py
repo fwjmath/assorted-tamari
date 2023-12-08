@@ -62,12 +62,12 @@ class TreePlot:
         - a list of maximal positions for each level
         """
         # Case of leaf
-        if not list(t):
+        if not t:
             return ((t.label(), []), []), [0], [0]
         # General case
         # First, get all the info from subtrees
         stlist, lprof, rprof = [], [], []
-        for st in list(t):
+        for st in t:
             newst, stlprof, strprof = TreePlot.__compute_tree_profile(st, horiz)
             stlist.append(newst)
             lprof.append(stlprof)
