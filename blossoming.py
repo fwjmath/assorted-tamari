@@ -550,7 +550,7 @@ class TamariBlossomingTree:
         return TamariBlossomingTree(rtree) # can do with a list
     
 
-    def tree_mirror(self):
+    def reflection(self):
         r'''
         Return the blossoming tree that is the mirror image of the current
         blossoming tree. Note that the dangling buds change in general, so the
@@ -607,6 +607,7 @@ class TamariBlossomingTree:
         # using clockwise direction, instead of counterclockwise for trees
         embed = {x : cycord[x][::-1] for x in cycord}
         g.set_embedding(embed)
+        # alternative: use planar layout by sage, but it is a bit too dense.
         # pos = g.layout_planar(on_embedding=embed, external_face=(0, 1))
         pos = g.layout_tree()
         
@@ -642,11 +643,12 @@ class TamariBlossomingTree:
                 rad2 = rad_dir(pos[rn], pos[cycord[rn][eidx2]])
                 if rad2 <= rad1:
                     rad2 += math.pi * 2
+                # trisection of angle
                 rbuds = [rad1 + (rad2 - rad1) / 3 * (1 + i) for i in range(2)]
                 for i in range(2):
                     G += plot_bud(pos[rn], rbuds[i], minedge / 2,
                                   cycord[rn][budidx[i]], dbuds)
-            else: # two non-consecutive buds
+            else: # two non-consecutive buds, we put each one in the middle
                 for i in range(2):
                     rad1 = rad_dir(pos[rn], pos[cycord[rn][budidx[i] - 1]])
                     eidx2 = budidx[i] + 1 - ncnt
