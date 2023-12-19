@@ -256,8 +256,8 @@ class TamariBlossomingTree:
         given as a pair of binary trees (not necessarily of type BinaryTree).
 
         INPUT:
-        - ``ltree``, ``rtree``: two binary trees such that ``ltree`` is smaller
-        than ``rtree`` in the Tamari order
+        - ``ltree``, ``htree``: two binary trees such that ``ltree`` is smaller
+        than ``htree`` in the Tamari order
 
         OUTPUT:
         A blossoming tree in bijectino with the given Tamari interval
@@ -664,6 +664,90 @@ class TamariBlossomingTree:
         return G
 
 
+    @staticmethod
+    def __binary_tree_arcs(btree):
+        '''
+        Internal function. Returns the list of arcs in the smooth drawing of a
+        given binary tree.
+        
+        INPUT:
+        - ``btree``: a binary tree, which can be a BinaryTree or an 
+                       OrderedTree that happens to be binary
+        
+        OUTPUT:
+        The list of arcs in the smooth drawing, represented by leaves on its 
+        both ends.
+        '''
+        def aux(bt, offset, l):
+            if not bt:
+                return
+            l.append((offset, offset + bt.node_number()))
+            stlist = list(bt)
+            aux(stlist[0], offset, l)
+            aux(stlist[1], offset + stlist[0].node_number() + 1, l)
+        
+        arclist = []
+        aux(btree, 0, arclist)
+        return arclist
+    
+    
+    @staticmethod
+    def binary_tree_smooth_drawing(btree, color='blue'):
+        r'''
+        Utility function for plotting the smooth drawing of a binary tree
+
+        INPUT:
+        - ``btree``: a binary tree, not necessarily of type BinaryTree
+        - ``color``: color of the arcs
+
+        OUTPUT:
+        The smooth drawing of a binary tree with the given color
+        '''
+        # initialization
+        bt = BinaryTree(btree)
+        G = Graphics()
+        G.set_aspect_ratio(1)
+
+        # plot the arcs
+        for e in TamariBlossomingTree.__binary_tree_arcs(bt):
+            G += arc([(e[0] + e[1]) / 2, 0], (e[1] - e[0]) / 2, sector=(0, pi),
+                     rgbcolor=color)
+        G.axes(show=False)
+        return G
+    
+    
+    def smooth_drawing(self):
+        r'''
+        Plot the smooth drawing of ``self``
+        '''
+        def cirnode(x, y):
+            return circle([x, y], 0.1, fill=True, edgecolor='black',
+                          facecolor='black', zorder=2)
+
+        def semicir(x1, x2, isupper):
+            sec = (0, pi) if isupper else (pi, 2*pi)
+            color = 'blue' if isupper else 'red'
+            return arc([(x1 + x2) / 2, 0], (x2 - x1) / 2, sector=sec, zorder=1,
+                       rgbcolor=color)
+
+        # initialization
+        G = Graphics()
+        G.set_aspect_ratio(1)
+
+        # draw the vertices, black circle for tree node, white squares for edges
+        n = self.size
+        for i in range(n + 1): # tree nodes
+            G += cirnode(i, 0)
+
+        # draw the arcs according to upper and lower trees
+        trees = self.to_tamari()
+        for i in range(2):
+            for e in TamariBlossomingTree.__binary_tree_arcs(trees[i]):
+                G += semicir(e[0], e[1], i == 1) # 0 is lower, 1 is upper
+        G.axes(show=False)
+        return G
+
+
 class TamariBlossomingTreeFactory:
     r'''
     This factory class is for random generation of Tamari blossoming trees of
@@ -685,7 +769,7 @@ class TamariBlossomingTreeFactory:
         # normalized by dividing the growth factor 4^4 / 3^3
         # precision is enough, as the rest grows as n^(-3/2)
         l = [1] # no need to use numerical_approx with prec, as random is float
-        for i in range(1, size):
+        for i in range(1, size + 1):
             nextitem = l[-1] * (4 * i - 1) * (4 * i - 2) * (4 * i - 3) / 64
             nextitem /= (3 * i + 1) * i * (3 * i - 1) / 9
             l.append(nextitem)
@@ -693,8 +777,8 @@ class TamariBlossomingTreeFactory:
         # l2 = [binomial(4 * i + 1, i) // (4 * i + 1) for i in range(size)]
         # counting for generation
         self.cutting = []
-        for i in range(size):
-            self.cutting.append((l[i] * l[size - 1 - i], i))            
+        for i in range(size + 1):
+            self.cutting.append((l[i] * l[size - i], i))
         self.cutting.sort(key=lambda x: x[0], reverse=True)
         self.cutting_sum = sum([x[0] for x in self.cutting])
 
@@ -758,7 +842,7 @@ class TamariBlossomingTreeFactory:
                 break
             else:
                 cnt -= e[0]
-        s2 = self.size - 1 - s1
+        s2 = self.size - s1
         p1 = self.__rand_normal_path(s1)
         p2 = self.__rand_normal_path(s2)
         return [3] + p1 + [-1] + p2 + [-1, -1]
