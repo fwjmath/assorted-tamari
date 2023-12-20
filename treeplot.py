@@ -197,22 +197,3 @@ class TreePlot:
             G += s
         G.axes(show=False)
         return G
-        
-        # convert to labeled ordered tree
-        t = LabelledOrderedTree(tree)
-        # compute the hierarchical shifting
-        tshift, _, _ = TreePlot.__compute_tree_profile(t, horiz)
-        # initialize the graphics
-        G = Graphics()
-        G.set_aspect_ratio(1)
-        # construct the dictionary for options
-        opt = {'radius': radius, 'fill': fill, 'thick': thickness, 'vert': vert,
-               'linec': linecolor, 'cfunc': colorfunc}
-        # compute the graphics
-        shapes = []
-        draw(shapes, tshift, 0, 0, 0, 0, opt)
-        for s in shapes:
-            G += s
-        G.axes(show=False)
-        return G
-        
