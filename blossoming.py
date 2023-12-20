@@ -34,12 +34,21 @@ from sage.combinat.interval_posets import TamariIntervalPoset
 from sage.combinat.interval_posets import TamariIntervalPosets
 from math import acos, cos, sin
 from sage.misc.prandom import uniform, randrange
+from typing import Self
+
+
+# optional module for plotting blossoming trees
+defaultlayout = 'treeplot'
+try:
+    from treeplot import TreePlot
+except ModuleNotFoundError:
+    defaultlayout = 'tree'
 
 
 class TamariBlossomingTree:
 
     @staticmethod
-    def __budcount(tree):
+    def __budcount(tree) -> int:
         r'''
         Internal function. Counts the number of buds at the root of ``tree``.
         We do not suppose ``tree`` to be of type OrderedTree
@@ -63,7 +72,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def __matching_word(tree):
+    def __matching_word(tree) -> list[int]:
         r'''
         Internal function, returns the matching word with buds as 1 and legs as
         0. We do not suppose ``tree`` to be of type OrderedTree. We do not count
@@ -83,7 +92,7 @@ class TamariBlossomingTree:
         return aux(tree)
 
     
-    def __get_meandric_order(self):
+    def __get_meandric_order(self) -> tuple[list[int], list[int]]:
         r'''
         Internal function. Computes the order of nodes and edges in the meandric
         representation. In the intermediate steps, we have
@@ -154,7 +163,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def __canon_label(tree):
+    def __canon_label(tree: OrderedTree) -> LabelledOrderedTree:
         r'''
         Internal function. Use a recursive approach to compute the canonical
         labeling of a tree without using node_number, which is very costly.
@@ -204,7 +213,7 @@ class TamariBlossomingTree:
         return
 
 
-    def to_plane_tree(self):
+    def to_plane_tree(self) -> OrderedTree:
         r'''
         Returns the blossoming tree as an OrderedTree. The buds are simply
         leaves.
@@ -212,7 +221,7 @@ class TamariBlossomingTree:
         return OrderedTree(self.tree)
     
 
-    def to_tamari(self):
+    def to_tamari(self) -> tuple[BinaryTree, BinaryTree]:
         r'''
         Returns the Tamari interval in bijection with ``self``, under the form
         of a pair of binary trees
@@ -250,7 +259,7 @@ class TamariBlossomingTree:
 
     
     @staticmethod
-    def from_tamari(ltree, htree):
+    def from_tamari(ltree, htree) -> Self:
         r'''
         Returns the blossoming tree corresponding to the given Tamari interval,
         given as a pair of binary trees (not necessarily of type BinaryTree).
@@ -301,7 +310,7 @@ class TamariBlossomingTree:
         return TamariBlossomingTree(ptree)
 
 
-    def to_TIP(self):
+    def to_TIP(self) -> TamariIntervalPoset:
         r'''
         Returns the corresponding TamariIntervalPoset object in bijection with
         the current blossoming tree
@@ -311,7 +320,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def from_TIP(tip):
+    def from_TIP(tip) -> Self:
         r'''
         Returns a blossoming tree in bijection with a TamariIntervalPoset
 
@@ -323,7 +332,7 @@ class TamariBlossomingTree:
     
 
     @staticmethod
-    def binary_tree_plot(btree):
+    def binary_tree_plot(btree) -> Graphics:
         r'''
         Utility function for plotting binary trees in the Chapoton way
 
@@ -368,7 +377,7 @@ class TamariBlossomingTree:
         return G
         
     
-    def tamari_dual(self):
+    def tamari_dual(self) -> Self:
         r'''
         Perform the half-turn symmetric on meandric tree and return the result.
         This is equivalent of taking the dual in the Tamari lattice for the
@@ -380,7 +389,7 @@ class TamariBlossomingTree:
         return TamariBlossomingTree.from_tamari(lrt, rlt)
 
 
-    def plot_meandric(self, semicircle=False, arrow=True):
+    def plot_meandric(self, semicircle=False, arrow=True) -> Graphics:
         r'''
         Plot the meandric tree of ``self``
 
@@ -449,7 +458,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def __find_dangling_bud(tree):
+    def __find_dangling_bud(tree: LabelledOrderedTree) -> list[int]:
         r'''
         Internal function. Returns the dangling buds of ``tree``, in the order
         of counterclockwise order starting from the root. In ``tree`` we assume
@@ -494,7 +503,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def __get_cycle_order(t):
+    def __get_cycle_order(t: LabelledOrderedTree) -> list[int]:
         r'''
         Internal function. Returns the cyclic order (in the sens of maps) of the
         given tree. More precisely, this functions returns a dictionary with
@@ -514,7 +523,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def from_plane_tree(tree, skip_check=False, random_bud=False):
+    def from_plane_tree(tree, skip_check=False, random_bud=False) -> Self:
         r'''
         Return the blossoming tree corresponding to the given tree. We suppose
         that the root of the tree is a bud. Comparing to __init__, we do not
@@ -550,7 +559,7 @@ class TamariBlossomingTree:
         return TamariBlossomingTree(rtree) # can do with a list
     
 
-    def reflection(self):
+    def reflection(self) -> Self:
         r'''
         Return the blossoming tree that is the mirror image of the current
         blossoming tree. Note that the dangling buds change in general, so the
@@ -559,17 +568,26 @@ class TamariBlossomingTree:
 
         OUTPUT:
         A blossoming tree that is the mirror image of the current one. Not to be
-        confused with the Tamari dual. We note that this bijection is not
-        involutive. In fact, applying it twice gives the Tamari dual.
+        confused with the Tamari dual. We note that this bijection as hereby 
+        implemented is not involutive, due to implementation detail. In fact, 
+        applying it twice gives the Tamari dual, because we do not keep the
+        information about coloring.
         '''        
         tree = self.to_plane_tree().left_right_symmetry()
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True)
 
     
-    def plot_blossoming(self):
+    def plot_blossoming(self, aspect=1.0, layout=None) -> Graphics:
         r'''
         Plot the blossoming tree of ``self``, using the plot of OrderedTree, but
         with buds well spaced.
+        
+        INPUT:
+        - ``aspect``: ratio of aspect, default to 1.0
+        - ``layout``: the algorithm for layout, with three possible options:
+            * 'treeplot': uses ``get_layout`` in ``TreePlot`` (default)
+            * 'tree': uses ``layout_tree`` of undirected graph in sage
+            * 'planar': uses ``layout_planar`` of undirected graph in sage
         '''
         def euclid_dist(p1, p2):
             return sum([(p1[i] - p2[i]) ** 2 for i in range(2)]) ** 0.5
@@ -590,12 +608,14 @@ class TamariBlossomingTree:
         def plot_bud(origp, rad, l, bud, dbuds):
             p2 = shift_point(pos[rn], rad, l)
             w = 1
+            color = 'red'
             if bud == dbuds[0]:
                 w = 3
+                color = 'darkgreen'
             elif bud == dbuds[1]:
                 w = 2
-            return arrow2d(pos[rn], p2, rgbcolor='red', width=w, arrowsize=w,
-                           zorder=1)
+                color = 'darkgreen'
+            return line([pos[rn], p2], rgbcolor=color, thickness=w, zorder=1)
         
         # construct the graph and the embedding
         t = LabelledOrderedTree([self.tree], label=0)
@@ -607,13 +627,36 @@ class TamariBlossomingTree:
         # using clockwise direction, instead of counterclockwise for trees
         embed = {x : cycord[x][::-1] for x in cycord}
         g.set_embedding(embed)
-        # alternative: use planar layout by sage, but it is a bit too dense.
-        # pos = g.layout_planar(on_embedding=embed, external_face=(0, 1))
-        pos = g.layout_tree()
+        # use appropriate layout algorithm
+        pos = None
+        if layout is None:
+            layout = defaultlayout
+        if layout == 'treeplot':
+            if defaultlayout != 'treeplot':
+                raise ModuleNotFoundError('Module Treeplot absent')
+            pos = TreePlot.get_layout(t)
+        elif layout == 'tree':
+            pos = g.layout_tree()
+        elif layout == 'planar':
+            pos = g.layout_planar(on_embedding=embed, external_face=(0, 1))
+        else:
+            raise ValueError('Invalid option for parameter "layout"')
         
         # Initialize the graphic
         G = Graphics()
-        G.set_aspect_ratio(1)
+        G.set_aspect_ratio(aspect)
+        
+        # Normalize node positions
+        xcoords = [pos[i][0] for i in realnodes]
+        minx = min(xcoords)
+        maxx = max(xcoords)
+        ycoords = [pos[i][1] for i in realnodes]
+        miny = min(ycoords)
+        maxy = max(ycoords)
+        multfact = aspect / (maxy - miny) * (maxx - minx)
+        for node in realnodes:
+            e = pos[node]
+            pos[node] = (e[0], (e[1] - miny) * multfact + miny)
 
         # compute min edge for scaling (excluding buds)
         minedge = None
@@ -622,7 +665,7 @@ class TamariBlossomingTree:
                 edlen = euclid_dist(pos[n1], pos[n2])
                 if minedge is None or minedge > edlen:
                     minedge = edlen
-                
+        
         # draw the real nodes (not the buds)
         for node in realnodes:
             G += circle(pos[node], 0.02 * edlen, fill=True, zorder=2)
@@ -634,6 +677,7 @@ class TamariBlossomingTree:
 
         # draw the buds
         dbuds = TamariBlossomingTree.__find_dangling_bud(self.tree)
+        budlen = minedge * 0.3
         for rn in realnodes:
             ncnt = len(cycord[rn])
             budidx = [i for i in range(ncnt) if degs[cycord[rn][i]] == 1]
@@ -646,7 +690,7 @@ class TamariBlossomingTree:
                 # trisection of angle
                 rbuds = [rad1 + (rad2 - rad1) / 3 * (1 + i) for i in range(2)]
                 for i in range(2):
-                    G += plot_bud(pos[rn], rbuds[i], minedge / 2,
+                    G += plot_bud(pos[rn], rbuds[i], budlen,
                                   cycord[rn][budidx[i]], dbuds)
             else: # two non-consecutive buds, we put each one in the middle
                 for i in range(2):
@@ -656,7 +700,7 @@ class TamariBlossomingTree:
                     if rad2 <= rad1:
                         rad2 += math.pi * 2
                     rbud = (rad1 + rad2) / 2
-                    G += plot_bud(pos[rn], rbud, minedge / 2,
+                    G += plot_bud(pos[rn], rbud, budlen,
                                   cycord[rn][budidx[i]], dbuds)
 
         # output
@@ -665,7 +709,7 @@ class TamariBlossomingTree:
 
 
     @staticmethod
-    def __binary_tree_arcs(btree):
+    def __binary_tree_arcs(btree: BinaryTree) -> list[tuple[int]]:
         '''
         Internal function. Returns the list of arcs in the smooth drawing of a
         given binary tree.
@@ -692,7 +736,7 @@ class TamariBlossomingTree:
     
     
     @staticmethod
-    def binary_tree_smooth_drawing(btree, color='blue'):
+    def binary_tree_smooth_drawing(btree, color='blue') -> Graphics:
         r'''
         Utility function for plotting the smooth drawing of a binary tree
 
@@ -716,7 +760,7 @@ class TamariBlossomingTree:
         return G
     
     
-    def smooth_drawing(self):
+    def smooth_drawing(self) -> Graphics:
         r'''
         Plot the smooth drawing of ``self``
         '''
@@ -756,7 +800,7 @@ class TamariBlossomingTreeFactory:
     size.
     '''
 
-    def __init__(self, size):
+    def __init__(self, size: int):
         r'''
         Initialization.
 
@@ -784,7 +828,7 @@ class TamariBlossomingTreeFactory:
 
 
     @staticmethod
-    def __random_combination(n):
+    def __random_combination(n: int) -> list[int]:
         r'''
         Internal function. Produces a subset of size n in range(4 * n + 1).
         Uses a random approach to avoid complicated unranking computation.
@@ -807,7 +851,7 @@ class TamariBlossomingTreeFactory:
         return l
 
 
-    def __rand_normal_path(self, n):
+    def __rand_normal_path(self, n: int) -> list[int]:
         r'''
         Internal function. Returns a path for 3-ary trees (4n+1 steps, n of them
         up steps, then last step removed).
@@ -829,7 +873,7 @@ class TamariBlossomingTreeFactory:
         return path
 
 
-    def _rand_path(self):
+    def _rand_path(self) -> list[int]:
         r'''
         Internal function. Returns a path for the correct trees, using counting.
         '''
@@ -849,7 +893,7 @@ class TamariBlossomingTreeFactory:
 
 
     @staticmethod
-    def _path_to_tree(path):
+    def _path_to_tree(path: list[int]) -> list[list[int]]:
         r'''
         Internal function. Returns a nearly blossoming tree (without closure
         condition) from the given path ``path`` for 3-ary trees. We assume that
@@ -876,7 +920,7 @@ class TamariBlossomingTreeFactory:
         return stack
 
 
-    def random_element(self):
+    def random_element(self) -> TamariBlossomingTree:
         r'''
         Generate a random blossoming tree of a given size
         '''

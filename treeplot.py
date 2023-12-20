@@ -47,8 +47,9 @@ class TreePlot:
         # result: largest deviation plus horiz
         return dist + horiz
     
+    
     @staticmethod
-    def __compute_tree_profile(t: LabelledOrderedTree, horiz):
+    def __compute_tree_profile(t: LabelledOrderedTree, horiz: float):
         r"""
         Internal function, computes the relative position of children for each
         node and the profile of the whole tree from both sides.
@@ -61,6 +62,13 @@ class TreePlot:
         - a list of minimal positions for each level
         - a list of maximal positions for each level
         """
+        def fusion_rprof(rprof, newprof, shift): # fusion two right profiles
+            # We assume that entries are all positive
+            size = max(len(rprof), len(newprof))
+            lr = list(rprof) + [0] * (size - len(rprof))
+            lnew = list(newprof) + [0] * (size - len(newprof))
+            return [max(lr[i], lnew[i] + shift) for i in range(size)]
+            
         # Case of leaf
         if not t:
             return ((t.label(), []), []), [0], [0]
@@ -75,13 +83,12 @@ class TreePlot:
 
         # Then compute the distances and positions
         k = len(stlist)
-        dist = []
-        for i in range(k - 1):
-            hdist = (TreePlot.__profile_distance(rprof[i], lprof[i + 1], horiz))
-            dist.append(hdist)
         pos = [0]
-        for d in dist:
-            pos.append(pos[-1] + d)
+        curprof = rprof[0]
+        for i in range(k - 1):
+            hdist = TreePlot.__profile_distance(curprof, lprof[i + 1], horiz)
+            curprof = fusion_rprof(curprof, rprof[i + 1], hdist)
+            pos.append(hdist)
 
         # Now center the root
         rootpos = pos[-1] / 2
@@ -98,6 +105,44 @@ class TreePlot:
 
         # construct and return the result
         return ((t.label(), pos), stlist), [0] + minprof, [0] + maxprof
+
+
+    @staticmethod
+    def get_layout(t: LabelledOrderedTree, horiz=0.7):
+        r"""
+        Returns a dictionary of positions of nodes in the layout (not scaled to
+        any given aspect ratio). The keys of the dictionary is the node labels,
+        and the values are coordinates. The layout has the root on the top. The
+        tree should not have any repeated label, otherwise an error will be
+        throwed.
+        
+        INPUT:
+        - ``tree``: a LabelledOrderedTree that we want to plot
+        - ``horiz``: minimal gap betwee nodes, in unity of distance between two
+        consecutive layers of nodes
+        """
+        def depths(t, ddict, curd): # compute depth of each node
+            if t.label() in ddict:
+                raise ValueError('Tree should not have repeated labels')
+            ddict[t.label()] = curd
+            for st in t:
+                depths(st, ddict, curd + 1)
+        
+        def shifts(s, sdict, shift): # extract shift information
+            l, sfts = s[0]
+            sdict[l] = shift
+            for i in range(len(sfts)):
+                shifts(s[1][i], sdict, shift + sfts[i])
+        
+        ddict = {} # dict for depth
+        depths(t, ddict, 0)
+        tshift, _, _ = TreePlot.__compute_tree_profile(t, horiz)
+        sdict = {} # dict for shift
+        shifts(tshift, sdict, 0)
+        cdict = {} # dict for coordinates
+        for label in ddict:
+            cdict[label] = (sdict[label], -ddict[label]) # root on top
+        return cdict
 
     @staticmethod
     def plot(tree, vert=1, horiz=0.7, radius=0.2, fill='lightblue',
@@ -152,3 +197,22 @@ class TreePlot:
             G += s
         G.axes(show=False)
         return G
+        
+        # convert to labeled ordered tree
+        t = LabelledOrderedTree(tree)
+        # compute the hierarchical shifting
+        tshift, _, _ = TreePlot.__compute_tree_profile(t, horiz)
+        # initialize the graphics
+        G = Graphics()
+        G.set_aspect_ratio(1)
+        # construct the dictionary for options
+        opt = {'radius': radius, 'fill': fill, 'thick': thickness, 'vert': vert,
+               'linec': linecolor, 'cfunc': colorfunc}
+        # compute the graphics
+        shapes = []
+        draw(shapes, tshift, 0, 0, 0, 0, opt)
+        for s in shapes:
+            G += s
+        G.axes(show=False)
+        return G
+        
