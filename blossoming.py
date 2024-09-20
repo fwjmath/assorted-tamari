@@ -5,14 +5,16 @@ This module implements the blossoming trees in bijection with Tamari intervals.
 These blossoming trees are with half-edges bicolored following some local rules,
 each node has two buds, and each edge has two legs. Buds are matched with legs
 in a planar way, leaving only two dangling buds. The coloring can be replaced by
-marking one of the dangling buds.
+marking one of the dangling buds. The blossoming tree is represented as a plane
+tree. We take the convention that the root bud is a dangling bud with red
+half-edges next to it in the counter-clockwise order 
 
 REFERENCES:
-Fang--Fusy--Nadeau, in progress
+Fang--Fusy--Nadeau, arXiv:2312.13159 [math.CO]
 '''
 
 # ****************************************************************************
-#       Copyright (C) 2023 Wenjie Fang <fwjmath@gmail.com>,
+#       Copyright (C) 2024 Wenjie Fang <fwjmath@gmail.com>,
 #
 #  Distributed under the terms of the GNU General Public License (GPL)
 #  as published by the Free Software Foundation; either version 2 of
@@ -528,6 +530,9 @@ class TamariBlossomingTree:
         Return the blossoming tree corresponding to the given tree. We suppose
         that the root of the tree is a bud. Comparing to __init__, we do not
         fail when the buds are not matching, but tries to find the correct bud.
+        We assume that the root, which is a bud, has red half-edges next to it
+        in counter-clockwise order (so the left one). We then find the unpaired
+        bud with the opposite property, to simplify the reflection operation.
 
         INPUT:
         - ``tree``: a plane tree with two buds on each node (one for the root).
@@ -549,11 +554,35 @@ class TamariBlossomingTree:
                 TamariBlossomingTree.__checkbuds(st)
             
         tree = TamariBlossomingTree.__canon_label(tree)
-        didx = 0
+        dangling = TamariBlossomingTree.__find_dangling_bud(tree)
+        
+        # compute bud color
+        cycord = TamariBlossomingTree.__get_cycle_order(tree)
+        dcolor = [0, 0]
+        for i in range(2):
+            bud = dangling[i]
+            if bud == 0:
+                dcolor[i] = 0
+                continue
+            color = 0
+            curpos = bud
+            while curpos != 0: # going up to the root
+                prevpos = curpos
+                curpos = cycord[curpos][0]
+                pidx = cycord[curpos].index(prevpos)
+                for sibling in cycord[curpos][pidx+1:]:
+                    if len(cycord[sibling]) == 1: # a bud
+                        color = 1 - color
+                color = 1 - color # going to the opposite half-edge
+            dcolor[i] = color
+        
+        # select against colors
+        if sum(dcolor) != 1:
+            raise ValueError('Invalide blossoming tree: bud colors')
+        didx = dcolor.index(1) # select the opposite color
         if random_bud:
             didx = randrange(2)
-        dangling = TamariBlossomingTree.__find_dangling_bud(tree)[didx]
-        cycord = TamariBlossomingTree.__get_cycle_order(tree)
+        dangling = dangling[didx]
         rroot = cycord[dangling][0] # the only neighbor of a bud is the root
         rtree = traverse(rroot, dangling, cycord)
         return TamariBlossomingTree(rtree) # can do with a list
@@ -563,15 +592,11 @@ class TamariBlossomingTree:
         r'''
         Return the blossoming tree that is the mirror image of the current
         blossoming tree. Note that the dangling buds change in general, so the
-        root dangling bud will be the one closest to the root in the
-        counterclockwise order.
+        root dangling bud will be the one with the correct color.
 
         OUTPUT:
         A blossoming tree that is the mirror image of the current one. Not to be
-        confused with the Tamari dual. We note that this bijection as hereby 
-        implemented is not involutive, due to implementation detail. In fact, 
-        applying it twice gives the Tamari dual, because we do not keep the
-        information about coloring.
+        confused with the Tamari dual.
         '''        
         tree = self.to_plane_tree().left_right_symmetry()
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True)
