@@ -530,6 +530,9 @@ class TamariBlossomingTree:
         Return the blossoming tree corresponding to the given tree. We suppose
         that the root of the tree is a bud. Comparing to __init__, we do not
         fail when the buds are not matching, but tries to find the correct bud.
+        We assume that the root, which is a bud, has red half-edges next to it
+        in counter-clockwise order (so the left one). We then find the unpaired
+        bud with the opposite property, to simplify the reflection operation.
 
         INPUT:
         - ``tree``: a plane tree with two buds on each node (one for the root).
@@ -551,11 +554,35 @@ class TamariBlossomingTree:
                 TamariBlossomingTree.__checkbuds(st)
             
         tree = TamariBlossomingTree.__canon_label(tree)
-        didx = 0
+        dangling = TamariBlossomingTree.__find_dangling_bud(tree)
+        
+        # compute bud color
+        cycord = TamariBlossomingTree.__get_cycle_order(tree)
+        dcolor = [0, 0]
+        for i in range(2):
+            bud = dangling[i]
+            if bud == 0:
+                dcolor[i] = 0
+                continue
+            color = 0
+            curpos = bud
+            while curpos != 0: # going up to the root
+                prevpos = curpos
+                curpos = cycord[curpos][0]
+                pidx = cycord[curpos].index(prevpos)
+                for sibling in cycord[curpos][pidx+1:]:
+                    if len(cycord[sibling]) == 1: # a bud
+                        color = 1 - color
+                color = 1 - color # going to the opposite half-edge
+            dcolor[i] = color
+        
+        # select against colors
+        if sum(dcolor) != 1:
+            raise ValueError('Invalide blossoming tree: bud colors')
+        didx = dcolor.index(1) # select the opposite color
         if random_bud:
             didx = randrange(2)
-        dangling = TamariBlossomingTree.__find_dangling_bud(tree)[didx]
-        cycord = TamariBlossomingTree.__get_cycle_order(tree)
+        dangling = dangling[didx]
         rroot = cycord[dangling][0] # the only neighbor of a bud is the root
         rtree = traverse(rroot, dangling, cycord)
         return TamariBlossomingTree(rtree) # can do with a list
