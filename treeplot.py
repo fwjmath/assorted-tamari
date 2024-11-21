@@ -9,7 +9,7 @@ plotted sub-trees, then combine them together while minimizing the size gap
 """
 
 # ****************************************************************************
-#       Copyright (C) 2023 Wenjie Fang <fwjmath@gmail.com>,
+#       Copyright (C) 2024 Wenjie Fang <fwjmath@gmail.com>,
 #
 #  Distributed under the terms of the GNU General Public License (GPL)
 #  as published by the Free Software Foundation; either version 2 of
@@ -62,12 +62,18 @@ class TreePlot:
         - a list of minimal positions for each level
         - a list of maximal positions for each level
         """
-        def fusion_rprof(rprof, newprof, shift): # fusion two right profiles
-            # We assume that entries are all positive
-            size = max(len(rprof), len(newprof))
-            lr = list(rprof) + [0] * (size - len(rprof))
-            lnew = list(newprof) + [0] * (size - len(newprof))
-            return [max(lr[i], lnew[i] + shift) for i in range(size)]
+        def fusion_prof(prof, newprof, shift, isright=True): 
+            # fusion two profiles
+            size = max(len(prof), len(newprof))
+            commsize = min(len(prof), len(newprof))
+            choice = max if isright else min
+            shift = shift if isright else -shift
+            l = [choice(prof[i], newprof[i] + shift) for i in range(commsize)]
+            if len(prof) >= len(newprof):
+                l.extend(prof[commsize:])
+            else:
+                l.extend([x + shift for x in newprof[commsize:]])
+            return l
             
         # Case of leaf
         if not t:
@@ -82,16 +88,35 @@ class TreePlot:
             rprof.append(strprof)
 
         # Then compute the distances and positions
+        # first, left-aligned positions
         k = len(stlist)
-        pos = [0]
+        lpos = [0]
         curprof = rprof[0]
         for i in range(k - 1):
             hdist = TreePlot.__profile_distance(curprof, lprof[i + 1], horiz)
-            curprof = fusion_rprof(curprof, rprof[i + 1], hdist)
-            pos.append(hdist)
+            curprof = fusion_prof(curprof, rprof[i + 1], hdist)
+            lpos.append(hdist)
+        # then right-aligned positions, except when there are 1 or 2 subtrees
+        if k <= 2:
+            rpos = lpos
+        else:
+            rpos = [0]
+            curprof = lprof[-1]
+            for i in range(k - 1, -1, -1):
+                hdist = TreePlot.__profile_distance(rprof[i], curprof, horiz)
+                curprof = fusion_prof(curprof, lprof[i], hdist, isright=False)
+                rpos.append(hdist)
+            rpos.reverse()
+            rpos = [rpos[0] - e for e in rpos]
+        # then take the mean
+        pos = [(lpos[i] + rpos[i]) / 2 for i in range(k)]
 
-        # Now center the root
-        rootpos = pos[-1] / 2
+        # Now center the root in the middle of the whole tree
+        # but not outside the interval of children
+        subminpos = min([min(lprof[i]) + pos[i] for i in range(k)])
+        submaxpos = max([max(rprof[i]) + pos[i] for i in range(k)])
+        rootpos = (subminpos + submaxpos) / 2
+        rootpos = min(max(0, rootpos), pos[-1])
         pos = [x - rootpos for x in pos]
 
         # Compute min and max position for levels
@@ -103,7 +128,7 @@ class TreePlot:
             if len(rprof[i]) > len(maxprof):
                 maxprof.extend([x + pos[i] for x in rprof[i][len(maxprof):]])
 
-        # construct and return the result
+        # construct and return the result        
         return ((t.label(), pos), stlist), [0] + minprof, [0] + maxprof
 
 
@@ -136,7 +161,7 @@ class TreePlot:
         
         ddict = {} # dict for depth
         depths(t, ddict, 0)
-        tshift, _, _ = TreePlot.__compute_tree_profile(t, horiz)
+        tshift = TreePlot.__compute_tree_profile(t, horiz)[0]
         sdict = {} # dict for shift
         shifts(tshift, sdict, 0)
         cdict = {} # dict for coordinates
@@ -183,7 +208,7 @@ class TreePlot:
         # convert to labeled ordered tree
         t = LabelledOrderedTree(tree)
         # compute the hierarchical shifting
-        tshift, _, _ = TreePlot.__compute_tree_profile(t, horiz)
+        tshift = TreePlot.__compute_tree_profile(t, horiz)[0]
         # initialize the graphics
         G = Graphics()
         G.set_aspect_ratio(1)
