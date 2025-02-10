@@ -24,7 +24,7 @@ Fang--Fusy--Nadeau, arXiv:2312.13159 [math.CO]
 
 from sage.graphs.graph import Graph
 from sage.combinat.ordered_tree import OrderedTree, LabelledOrderedTree
-from sage.combinat.binary_tree import from_tamari_sorting_tuple
+from sage.combinat.binary_tree import from_tamari_sorting_tuple, BinaryTree
 from sage.plot.graphics import Graphics
 from sage.plot.line import line
 from sage.plot.bezier_path import bezier_path
@@ -574,10 +574,11 @@ class TamariBlossomingTree:
                     if len(cycord[sibling]) == 1: # a bud
                         color = 1 - color
                 color = 1 - color # going to the opposite half-edge
-            dcolor[i] = color
+            dcolor[i] = 1 - color # accounting for the root bud
         
         # select against colors
         if sum(dcolor) != 1:
+            print(tree, dangling, dcolor)
             raise ValueError('Invalide blossoming tree: bud colors')
         didx = dcolor.index(1) # select the opposite color
         if random_bud:
@@ -817,6 +818,57 @@ class TamariBlossomingTree:
         return G
 
 
+class RandomCombination:
+    r'''
+    This class contains only one static function that generates a random
+    combination of n elements among kn + 1 elements, with n and k given in
+    parameter
+    '''
+
+    @staticmethod
+    def gen(n: int, k: int) -> list[int]:
+        r'''
+        Generate a random combination of n elements among kn + 1 elements using
+        a random approach, which is faster than the unranking approach.
+
+        INPUT:
+        - ``n``: a positive integer
+        - ``k``: a strictly positive integer at least 2
+
+        OUTPUT:
+        A list of elements in the random combination of ``n`` elements among
+        integers from ``1`` to ``kn+1``, not necessary in order. 
+        '''
+        # test validity
+        if n < 0 or k <= 1:
+            raise ValueError("Invalid parameter")
+        # get a random set with each element appearing with prob 1/k
+        # the size of the set is close to n, with sqrt(n) standard deviation
+        s : list[int] = []  # the random set
+        cs : list[int] = [] # its complement
+        for i in range(k * n + 1):
+            if randrange(k) == 1:
+                s.append(i)
+            else:
+                cs.append(i)
+        cnt : int = len(s)
+        if cnt > n: # First case: too many elements
+            # remove randomly until getting the correct number
+            while cnt > n:
+                s[randrange(cnt)] = s[-1]
+                s.pop()
+                cnt -= 1
+        else:
+            # add elements randomly until getting the correct number
+            while cnt < n:
+                id : int = randrange(k * n + 1 - cnt)
+                s.append(cs[id])
+                cs[id] = cs[-1]
+                cs.pop()
+                cnt += 1
+        return s
+
+    
 class TamariBlossomingTreeFactory:
     r'''
     This factory class is for random generation of Tamari blossoming trees of
@@ -842,8 +894,6 @@ class TamariBlossomingTreeFactory:
             nextitem = l[-1] * (4 * i - 1) * (4 * i - 2) * (4 * i - 3) / 64
             nextitem /= (3 * i + 1) * i * (3 * i - 1) / 9
             l.append(nextitem)
-        # checked correctness
-        # l2 = [binomial(4 * i + 1, i) // (4 * i + 1) for i in range(size)]
         # counting for generation
         self.cutting = []
         for i in range(size + 1):
@@ -852,36 +902,12 @@ class TamariBlossomingTreeFactory:
         self.cutting_sum = sum([x[0] for x in self.cutting])
 
 
-    @staticmethod
-    def __random_combination(n: int) -> list[int]:
-        r'''
-        Internal function. Produces a subset of size n in range(4 * n + 1).
-        Uses a random approach to avoid complicated unranking computation.
-        '''
-        s = set()
-        # get a random set with each element appearing with prob 1/4
-        # with prob >= 1/2 we have more than n elements
-        while len(s) < n:
-            s.clear()
-            for i in range(4 * n + 1):
-                if randrange(4) == 2:
-                    s.add(i)
-        # now remove randomly until getting the correct number
-        cnt = len(s)
-        l = list(s)
-        while cnt != n:
-            l[randrange(cnt)] = l[-1]
-            l.pop()
-            cnt -= 1
-        return l
-
-
     def __rand_normal_path(self, n: int) -> list[int]:
         r'''
         Internal function. Returns a path for 3-ary trees (4n+1 steps, n of them
         up steps, then last step removed).
         '''
-        uset = TamariBlossomingTreeFactory.__random_combination(n)
+        uset = RandomCombination.gen(n, 4)
         path = [-1] * (4 * n + 1)
         for e in uset:
             path[e] = 3
@@ -953,3 +979,21 @@ class TamariBlossomingTreeFactory:
         tree = TamariBlossomingTreeFactory._path_to_tree(path)
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
                                                     random_bud=True)
+
+
+class SynchronizedBlossomingTreeFactory:
+    r'''
+    This factory class is for random generation of synchronized blossoming
+    trees, which are in bijection with modern Tamari intervals, of a given
+    size. It is best to keep an instance of this factory for the same reason as
+    the previous class TamariBlossomingTreeFactory due to precomputation.
+    '''
+
+    def __init__(self, size: int):
+        r'''
+        Initialization
+
+        INPUT:
+        - ``size``: the size of the synchronized blossoming tree to generate.
+        '''
+        pass
