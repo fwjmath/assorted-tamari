@@ -171,8 +171,8 @@ class TamariBlossomingTree:
         labeling of a tree without using node_number, which is very costly.
         More precisely, it is quadratic.
         '''
-        def aux(tree, curl):
-            l = curl[0]
+        def aux(tree: OrderedTree, curl: list[int]) -> LabelledOrderedTree:
+            l : int = curl[0]
             curl[0] += 1
             return LabelledOrderedTree([aux(x, curl) for x in tree],
                                        label=l)
@@ -578,7 +578,7 @@ class TamariBlossomingTree:
         
         # select against colors
         if sum(dcolor) != 1:
-            print(tree, dangling, dcolor)
+            # print(tree, dangling, dcolor)
             raise ValueError('Invalide blossoming tree: bud colors')
         didx = dcolor.index(1) # select the opposite color
         if random_bud:
@@ -818,15 +818,58 @@ class TamariBlossomingTree:
         return G
 
 
-class RandomCombination:
+    def is_synchronized(self) -> bool:
+        r'''
+        Returns whether the Tamari interval presented by the current blossoming
+        tree is synchronized, i.e., two buds of the same node are adjacent.
+
+        OUTPUT:
+        ``True`` if the blossoming tree is synchronized, and ``False`` otherwise
+        '''
+        def aux(tree, isroot=False):
+            '''
+            Check synchronized condition on subtree
+            '''
+            # get indices of buds
+            idx = [i for i in range(len(tree)) if not tree[i]]
+            # bud number, and consecutive check
+            if isroot:
+                # at the root: one bud at the beginning or the end
+                if len(idx) != 1 or (idx[0] != 0 and idx[0] != len(tree) - 1):
+                    return False
+            else:
+                # otherwise: two buds consecutive
+                if len(idx) != 2 or idx[1] - idx[0] != 1:
+                    return False
+            for st in tree:
+                if not e and not aux(st): # an internal node failing the test
+                    return False
+            return True
+        return aux(self.tree, isroot=True)
+
+
+    def is_modern(self) -> bool:
+        r'''
+        Returns whether the Tamari interval associated to the current blossoming
+        tree is modern, using the function ``is_modern`` in TamariIntervalPoset.
+
+        OUTPUT:
+        ``True`` if the blossoming tree is modern, and ``False`` otherwise
+        '''
+        return self.to_TIP().is_modern()
+
+    
+
+class RandomPath:
     r'''
-    This class contains only one static function that generates a random
-    combination of n elements among kn + 1 elements, with n and k given in
-    parameter
+    This class contains static functions related to the generation of random
+    positive lattice paths with steps (1, k - 1) and (1, -1) of length kn + 1,
+    which can be negative only at the end of the last step, with n and k given
+    in parameters.
     '''
 
     @staticmethod
-    def gen(n: int, k: int) -> list[int]:
+    def gen_comb(n: int, k: int) -> list[int]:
         r'''
         Generate a random combination of n elements among kn + 1 elements using
         a random approach, which is faster than the unranking approach.
@@ -868,6 +911,55 @@ class RandomCombination:
                 cnt += 1
         return s
 
+    @staticmethod
+    def cutting(l : list[float], size : int) -> list[(float, int)]:
+        '''
+        Generate the cutting ratio list according to a list of (relative) count
+        of objects of sizes from ``0`` to ``size``. The cutting ratio list tells
+        us the probability to generate pairs of each size separation.
+
+        INPUT:
+        - ``l``: a list of the number of objects of sizes from ``0`` to ``size``
+        - ``size``: the size of elements to generate
+        '''
+        # check list size
+        if len(l) != size + 1:
+            raise ValueError("Invalid parameter: l does not have correct size.")
+        cutting : list[(float, int)] = []
+        for i in range(size + 1):
+            cutting.append((l[i] * l[size - i], i))
+        cutting.sort(key=lambda x: x[0], reverse=True)
+        return cutting
+
+
+    @staticmethod
+    def comb_to_path(n: int, k: int, uset: list[int]) -> list[int]:
+        path = [-1] * (k * n + 1)
+        for e in uset:
+            path[e] = k - 1
+        # find last lowest point
+        lidx, minh, height = 0, 0, 0
+        for i in range(len(path)):
+            height += path[i]
+            if height < minh:
+                lidx, minh = i + 1, height
+        # rotate for the path
+        path = path[lidx:] + path[:lidx]
+        # remove last step
+        path.pop()
+        return path
+
+
+    @staticmethod
+    def gen_path(n: int, k: int) -> list[int]:
+        r'''
+        Internal function. Returns a path for 3-ary trees (4n+1 steps, n of them
+        up steps, then last step removed).
+        '''
+        uset = RandomPath.gen_comb(n, k)
+        return RandomPath.comb_to_path(n, k, uset)
+    
+    
     
 class TamariBlossomingTreeFactory:
     r'''
@@ -885,43 +977,20 @@ class TamariBlossomingTreeFactory:
         - ``size``: the size of blossoming trees to generate, that is, the
         number of edges (not counting buds)
         '''
+        if size <= 0:
+            raise ValueError('Invalid parameter size.')
         self.size = size
         # compute the size of trees
         # normalized by dividing the growth factor 4^4 / 3^3
         # precision is enough, as the rest grows as n^(-3/2)
-        l = [1] # no need to use numerical_approx with prec, as random is float
+        l : list[float] = [1.0] # no need to use numerical_approx with prec
         for i in range(1, size + 1):
             nextitem = l[-1] * (4 * i - 1) * (4 * i - 2) * (4 * i - 3) / 64
             nextitem /= (3 * i + 1) * i * (3 * i - 1) / 9
             l.append(nextitem)
         # counting for generation
-        self.cutting = []
-        for i in range(size + 1):
-            self.cutting.append((l[i] * l[size - i], i))
-        self.cutting.sort(key=lambda x: x[0], reverse=True)
+        self.cutting = RandomPath.cutting(l, size)
         self.cutting_sum = sum([x[0] for x in self.cutting])
-
-
-    def __rand_normal_path(self, n: int) -> list[int]:
-        r'''
-        Internal function. Returns a path for 3-ary trees (4n+1 steps, n of them
-        up steps, then last step removed).
-        '''
-        uset = RandomCombination.gen(n, 4)
-        path = [-1] * (4 * n + 1)
-        for e in uset:
-            path[e] = 3
-        # find last lowest point
-        lidx, minh, height = 0, 0, 0
-        for i in range(len(path)):
-            height += path[i]
-            if height < minh:
-                lidx, minh = i + 1, height
-        # remove last step
-        path = path[lidx:] + path[:lidx]
-        path.pop()
-        # rotate for the path
-        return path
 
 
     def _rand_path(self) -> list[int]:
@@ -938,8 +1007,8 @@ class TamariBlossomingTreeFactory:
             else:
                 cnt -= e[0]
         s2 = self.size - s1
-        p1 = self.__rand_normal_path(s1)
-        p2 = self.__rand_normal_path(s2)
+        p1 = RandomPath.gen_path(s1, 4)
+        p2 = RandomPath.gen_path(s2, 4)
         return [3] + p1 + [-1] + p2 + [-1, -1]
 
 
@@ -947,7 +1016,7 @@ class TamariBlossomingTreeFactory:
     def _path_to_tree(path: list[int]) -> list[list[int]]:
         r'''
         Internal function. Returns a nearly blossoming tree (without closure
-        condition) from the given path ``path`` for 3-ary trees. We assume that
+        condition) from the given path ``path`` for 4-ary trees. We assume that
         the given path is valid (4n+1 steps, n of them up steps, ending at -1).
 
         Half-public for testing
@@ -980,13 +1049,15 @@ class TamariBlossomingTreeFactory:
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
                                                     random_bud=True)
 
-
+    
 class SynchronizedBlossomingTreeFactory:
     r'''
     This factory class is for random generation of synchronized blossoming
     trees, which are in bijection with modern Tamari intervals, of a given
-    size. It is best to keep an instance of this factory for the same reason as
-    the previous class TamariBlossomingTreeFactory due to precomputation.
+    size. No precomputation is needed here, but we keep the same convention.
+
+    We note that synchronized blossoming trees come with the two buds of the
+    same node always consecutive, and we simplify them by identifying them.
     '''
 
     def __init__(self, size: int):
@@ -996,4 +1067,42 @@ class SynchronizedBlossomingTreeFactory:
         INPUT:
         - ``size``: the size of the synchronized blossoming tree to generate.
         '''
-        pass
+        if size <= 0:
+            raise ValueError('Invalid parameter size.')
+        self.size = size
+
+
+    @staticmethod
+    def __rand_tree(size) -> list[list[int]]:
+        r'''
+        Internal function. Returns a random tree with buds identified
+
+        TODO: bug here
+        '''
+        path = RandomPath.gen_path(size, 3)
+        # print(path)
+        stack = [[0, []]]
+        for step in path:
+            if step == 2: # new nodes
+                stack.append([0, []])
+            else: # depending on type
+                if stack[-1][0] == 0: # add two buds
+                    stack[-1][0] = 1
+                    stack[-1][1].append([])
+                    stack[-1][1].append([])
+                else: # subtree completed
+                    subtree = stack.pop()[1]
+                    stack[-1][1].append(subtree)
+        tree = stack[-1][1]
+        tree.append([]) # add the extra bud besides the root
+        # print(tree)
+        return tree
+
+
+    def random_element(self) -> TamariBlossomingTree:
+        r'''
+        Generate a random synchronized blossoming tree of a given size
+        '''
+        tree = SynchronizedBlossomingTreeFactory.__rand_tree(self.size)
+        return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
+                                                    random_bud=True)
