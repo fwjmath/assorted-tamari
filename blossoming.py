@@ -187,7 +187,7 @@ class TamariBlossomingTree:
         dangling node
         
         INPUT:
-        - ``tree``: a plane tree satisfying the given condition 
+        - ``tree``: a plane tree satisfying the given condition
         '''
         # check root leaves
         if TamariBlossomingTree.__budcount(tree) != 1:
@@ -385,11 +385,15 @@ class TamariBlossomingTree:
         This is equivalent of taking the dual in the Tamari lattice for the
         corresponding interval. Not to be confused with the mirror symmetric of
         blossoming trees.
-        '''
-        lt, rt = self.to_tamari()
-        lrt, rlt = rt.left_right_symmetry(), lt.left_right_symmetry()
-        return TamariBlossomingTree.from_tamari(lrt, rlt)
 
+        Note that we use a feature of from_plane_tree instead of using the usual
+        Tamari module already in Sagemath to avoid exceeding the number of
+        recursions during the left-right symmetry of the binary trees when tree
+        size is large.
+        '''
+        # use the fact that from_plane_tree picks the bud with the opposite
+        # color of the root, so exchanges the color (thus duality)
+        return TamariBlossomingTree.from_plane_tree(self.tree)
 
     def plot_meandric(self, semicircle=False, arrow=True) -> Graphics:
         r'''
@@ -552,7 +556,7 @@ class TamariBlossomingTree:
                 raise ValueError('Not a blossoming tree, bud count incorrect')
             for st in tree:
                 TamariBlossomingTree.__checkbuds(st)
-            
+
         tree = TamariBlossomingTree.__canon_label(tree)
         dangling = TamariBlossomingTree.__find_dangling_bud(tree)
         
@@ -578,7 +582,6 @@ class TamariBlossomingTree:
         
         # select against colors
         if sum(dcolor) != 1:
-            # print(tree, dangling, dcolor)
             raise ValueError('Invalide blossoming tree: bud colors')
         didx = dcolor.index(1) # select the opposite color
         if random_bud:
@@ -1011,7 +1014,6 @@ class TamariBlossomingTreeFactory:
         p2 = RandomPath.gen_path(s2, 4)
         return [3] + p1 + [-1] + p2 + [-1, -1]
 
-
     @staticmethod
     def _path_to_tree(path: list[int]) -> list[list[int]]:
         r'''
@@ -1038,7 +1040,6 @@ class TamariBlossomingTreeFactory:
         # pop the last bud, which is always the last child
         stack.pop()
         return stack
-
 
     def random_element(self) -> TamariBlossomingTree:
         r'''
@@ -1080,7 +1081,6 @@ class SynchronizedBlossomingTreeFactory:
         TODO: bug here
         '''
         path = RandomPath.gen_path(size, 3)
-        # print(path)
         stack = [[0, []]]
         for step in path:
             if step == 2: # new nodes
@@ -1095,7 +1095,6 @@ class SynchronizedBlossomingTreeFactory:
                     stack[-1][1].append(subtree)
         tree = stack[-1][1]
         tree.append([]) # add the extra bud besides the root
-        # print(tree)
         return tree
 
 
@@ -1104,5 +1103,165 @@ class SynchronizedBlossomingTreeFactory:
         Generate a random synchronized blossoming tree of a given size
         '''
         tree = SynchronizedBlossomingTreeFactory.__rand_tree(self.size)
+        return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
+                                                    random_bud=True)
+
+
+
+class ModernBlossomingTreeFactory:
+    r'''
+    This factory class is for the generation of blossoming trees associated with
+    modern Tamari intervals of a given size. As some precomputation is needed,
+    it is the best practice to keep the same instance when generating multiple
+    modern blossoming trees.
+
+    According to Section 5.5 of the article, the generating function of modern
+    blossoming trees can be written as (1 + C)^2, with:
+
+    - C = A / (1 - B)
+    - B = z / (1 - B) * (1 + C)
+    - A = z / (1 - B) * (1 + C)^2 = B * (1 + C)
+
+    By solving it, we know that
+
+    - C is the series of Dyck paths with weight 2 on every non-initial up-step
+    - B is the series of Dyck paths of C without touching the x-axis in middle
+    - A is the series of Dyck paths with weight 2 on every up-step except the
+    first and the second one on the x-axis (there may be only one such step)
+    '''
+    def __init__(self: Self, size: int):
+        r'''
+        Initialization and precomputation
+
+        INPUT:
+        - ``size``: the size of modern blossoming trees to generate, which is
+        the number of internal edges (not including buds)
+        '''
+        if size <= 0:
+            raise ValueError('Invalid parameter size.')
+        self.size = size
+        # compute the size of trees
+        # two parts, each given by the series
+        # $1 + C(z) = 1 + \sum_{n \geq 1} \frac{2^{n-1}}{n+1} \binom{2n}{n} z^n$
+        # growth rate 8^n
+        l : list[float] = [8.0, 1.0] # float suffices as for other families
+        for i in range(2, size + 1):
+            l.append(l[-1] * (i - 0.5) / (i + 1))
+        # counting for generation
+        self.cutting = RandomPath.cutting(l, size)
+        self.cutting_sum = sum([x[0] for x in self.cutting])
+
+
+    @staticmethod
+    def __genC(dtree: OrderedTree) -> list[OrderedTree]:
+        r'''
+        Internal function. Generate a forest counted by the series 1+C, which
+        is a sequence of B-trees followed by an A-tree, given a Dyck path and
+        the colors of the up-steps on the x-axis. We represent the Dyck path by
+        a plane tree so that the colors can be generated on the fly.
+
+        INPUT:
+        - `dtree`: a plane tree standing for the Dyck path
+
+        OUTPUT:
+        A list of corresponding trees
+        '''
+        if not dtree: # empty tree
+            return []
+        if len(dtree) == 1 and not dtree[0]: # simple tree
+            return [OrderedTree([[], []])]
+        idx = len(dtree) - 1 # index of cutting
+        while idx > 0: # never check the first
+            if randrange(2) == 1: # bad color, B stops here
+                break
+            idx -= 1
+        idx += 1
+        lasttree = ModernBlossomingTreeFactory.__genA(OrderedTree(dtree[:idx]))
+        treelist = [lasttree]
+        restlist = [ModernBlossomingTreeFactory.__genB(dtree[i])
+                    for i in range(idx, len(dtree))]
+        treelist.extend(restlist)
+        return treelist
+
+
+    @staticmethod
+    def __genB(dtree: OrderedTree) -> OrderedTree:
+        r'''
+        Internal function. Generate a B-tree, given a Dyck path counted by the
+        series B (colors generated on the fly). The Dyck path (without the
+        initial and final step) is represented by a plane tree.
+
+        INPUT:
+        - `dtree`: a plane tree standing for the Dyck path with first and last
+        step removed
+
+        OUTPUT:
+        The corresponding B-tree
+        '''
+        if not dtree: # empty tree
+            return OrderedTree([[],[]])
+        idx = 0 # index of cutting
+        while idx < len(dtree):
+            if randrange(2) == 1: # bad color, B stops here
+                break
+            idx += 1
+        # first sequence: a sequence of B
+        treelist = [ModernBlossomingTreeFactory.__genB(dtree[i])
+                    for i in range(idx)]
+        # the first bud
+        treelist.append(OrderedTree([]))
+        # second sequence: a sequence given by C
+        restlist = ModernBlossomingTreeFactory.__genC(OrderedTree(dtree[idx:]))
+        treelist.extend(restlist)
+        # the second bud
+        treelist.append(OrderedTree([]))
+        return OrderedTree(treelist)
+
+
+    @staticmethod
+    def __genA(dtree: OrderedTree) -> OrderedTree:
+        r'''
+        Internal function. Generate an A-tree, given a Dyck path counted by the
+        series A with colors given on the fly (so no color for two up-steps).
+        The Dyck path is again given as a plane tree.
+
+        INPUT:
+        - `dtree`: a plane tree standing for the Dyck path
+
+        OUTPUT:
+        The corresponding A-tree
+        '''
+        if not dtree: # empty tree, should not happen!
+            raise ValueError('Internal error on __genA')
+        # first part: same as B, and there is already a separating bud
+        treelist = [x for x in ModernBlossomingTreeFactory.__genB(dtree[0])]
+        # second part: a sequence from C
+        restlist = ModernBlossomingTreeFactory.__genC(OrderedTree(dtree[1:]))
+        treelist.extend(restlist)
+        return OrderedTree(treelist)
+
+
+    def random_element(self) -> TamariBlossomingTree:
+        r'''
+        Generate a random modern blossoming tree of a given size
+        '''
+        # get the size separation
+        cnt = uniform(0, self.cutting_sum)
+        s1, s2 = -1, -1
+        for e in self.cutting:
+            if cnt < e[0]:
+                s1 = e[1]
+                break
+            else:
+                cnt -= e[0]
+        s2 = self.size - s1
+        # first C sequence
+        l1 = self.__genC(DyckWords(s1).random_element().to_ordered_tree())
+        # a bud
+        l1.append(OrderedTree([]))
+        # second C sequence
+        l2 = self.__genC(DyckWords(s2).random_element().to_ordered_tree())
+        l1.extend(l2)
+        tree = OrderedTree(l1)
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
                                                     random_bud=True)
