@@ -3,9 +3,9 @@
 r"""
 Left-aligned colorable trees
 
-This module implements left-aligned colorable trees, which are parabolic Catalan
-objects. They were introduced in [CFM2019]_, and are in bijection with various
-other parabolic Catalan objects.
+This module implements left-aligned colorable trees, which are
+parabolic Catalan objects. They were introduced in [CFM2019]_, and are
+in bijection with various other parabolic Catalan objects.
 
 REFERENCES:
 
@@ -20,43 +20,49 @@ REFERENCES:
 #  Distributed under the terms of the GNU General Public License (GPL)
 #  as published by the Free Software Foundation; either version 2 of
 #  the License, or (at your option) any later version.
-#                  http://www.gnu.org/licenses/
+#                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-from sage.combinat.ordered_tree import LabelledOrderedTree, OrderedTree
+from sage.combinat.ordered_tree import OrderedTree
 from sage.combinat.dyck_word import DyckWord
 from sage.combinat.permutation import Permutation
+from sage.misc.prandom import choice
+# or maybe: from random import choice
+
 from treeplot import TreePlot
 
+
 class LACTree:
-    
+
     @staticmethod
     def __coloring__(T, alpha):
         r"""
-        Checks if T is compatible with alpha. If so, a color vector is returned.
-        Otherwise, None is returned.
-        
+        Checks if T is compatible with alpha.
+
+        If so, a color vector is returned.
+        Otherwise, ``None`` is returned.
+
         INPUT:
-        
+
         - ``T`` -- an ordered tree
         - ``alpha`` -- a composition indicating colors
-        
+
         OUTPUT:
-        
-        A pair ``(Tc, color)`` with ``Tc`` the same tree with canonical 
+
+        A pair ``(Tc, color)`` with ``Tc`` the same tree with canonical
         labeling, and ``color`` the color vector
         """
         n = sum(alpha)
         if n+1 != T.node_number():
             raise ValueError('Inconsistent sizes of parameters')
 
-        #initialization
+        # initialization
         Tc = T.canonical_labelling()
         color = [-1] * (n+2)
         stack = list(Tc)
         stack.reverse()
 
-        #iteration (stack goes in reversed order)
+        # iteration (stack goes in reversed order)
         for i in range(len(alpha)):
             if len(stack) < alpha[i]:
                 return None
@@ -70,47 +76,48 @@ class LACTree:
                 newlist.reverse()
                 stack += newlist
 
-        #return
+        # return
         return (Tc, color)
-    
+
     def __init__(self, T, alpha):
         r"""
         Constructor of the class, checks if the parameters are compatible
-        
+
         INPUT:
-        
+
         - ``T``: an ordered tree
-        - ``alpha``: a composition indicating the number of nodes for each color
-        
+        - ``alpha``: a composition indicating the number of nodes
+          for each color
+
         OUTPUT:
-        
+
         If the input is compatible, then return an object of ``LACTree``
         """
-        check = self.__coloring__(T,alpha)
+        check = self.__coloring__(T, alpha)
         if check is None:
             raise ValueError('Incompatible parameters')
         else:
             self.tree, self.color = check
             self.alpha = alpha
-    
+
     def tree_shape(self):
         r"""
         Returns the plane tree associated to the LAC tree
         """
         return self.tree
-    
+
     def comp(self):
         r"""
         Returns the composition associated to the LAC tree
         """
         return self.alpha
-    
+
     def region_coloring(self):
         r"""
         Returns the coloring for regions on the LAC tree
         """
         return self.color
-    
+
     def plot(self):
         r"""
         Plot the LAC tree using the custom class TreePlot
@@ -128,14 +135,14 @@ class LACTree:
         r"""
         Returns an LAC-tree in bijection with the given bounce pair. A check is
         performed for validity.
-        
+
         INPUT:
-        
+
         - ``dyck``: a Dyck path in the 0,1 format
         - ``alpha``: a composition indicating the bounce path
-        
+
         OUTPUT:
-        
+
         An LAC-tree in bijection with this bounce pair
         """
         n = sum(alpha)
@@ -166,7 +173,7 @@ class LACTree:
         l = len(alpha)
         dyckpost = n - alpha[l-1]
         actives = [OrderedTree([]) for i in range(alpha[l-1])]
-        for region in range(l-2,-1,-1):
+        for region in range(l-2, -1, -1):
             newactives = []
             for i in range(alpha[region]):
                 newnode = OrderedTree(actives[:vsteps[dyckpost]])
@@ -175,21 +182,20 @@ class LACTree:
                 dyckpost -= 1
             actives = newactives + actives
         T = OrderedTree(actives)
-        
+
         # coloring with existent function
-        
+
         return LACTree(T, alpha)
-    
+
     def to_bounce_pair(self):
         r"""
         Returns a bounce pair in bijection with the LAC-tree
-        
+
         OUTPUT:
-        
+
         A pair ``(path, alpha)``, where ``path`` is a Dyck path in 0,1 format,
         and ``alpha`` the composition of the bounce path.
         """
-        n = sum(self.alpha)
         l = len(self.alpha)
         path = [1] * len(self.tree)
         cvec = [[] for i in range(l+1)]
@@ -201,20 +207,20 @@ class LACTree:
                 path += [0]
                 path += [1] * k
         return (path, self.alpha)
-    
-    @staticmethod    
+
+    @staticmethod
     def from_steep_pair(steep, path):
         r"""
         Returns an LAC-tree in bijection with the given steep pair. A check is
         performed for validity.
-        
+
         INPUT:
-        
+
         - ``steep``: a steep path in the 0,1 format
         - ``path``: a Dyck path in the 0,1 format
-        
+
         OUTPUT:
-        
+
         An LAC-tree in bijection with this steep pair
         """
         if len(steep) != len(path):
@@ -227,7 +233,7 @@ class LACTree:
                 raise ValueError('Incompatible parameters: not nested')
         Tc = DyckWord(path).to_ordered_tree().left_right_symmetry()
         Tc = Tc.canonical_labelling().left_right_symmetry()
-        
+
         # extract marks from steep, 2 means marked north step
         marks = [True]
         for i in range(1, len(steep)):
@@ -239,7 +245,7 @@ class LACTree:
             if marked[i] != 0:
                 marked[i] = 2 if marks[curptr] else 1
                 curptr += 1
-        
+
         # coloring
         colorlist = [-1 for i in range(n+2)]
         colorstack = [-1]
@@ -253,7 +259,7 @@ class LACTree:
             if 2 == x:
                 curcolor += 1
                 colorptr += 1
-                colorstack.insert(colorptr,curcolor)
+                colorstack.insert(colorptr, curcolor)
                 curlabel += 1
                 colorlist[curlabel] = curcolor
                 colorlast[curcolor] = labellist[curlabel]
@@ -267,19 +273,19 @@ class LACTree:
                 colorcount[mycolor] += 1
             else:
                 colorptr -= 1
-        
-        alpha = sorted(colorlast.items(), key = lambda x: x[1])
+
+        alpha = sorted(colorlast.items(), key=lambda x: x[1])
         alpha = list(map(lambda x: colorcount[x[0]], alpha))
         return LACTree(Tc.shape().left_right_symmetry(), alpha)
-    
+
     def to_steep_pair(self):
         r"""
         Returns a steep pair in bijection with the LAC-tree
-        
+
         OUTPUT:
-        
-        A pair ``(steep, path)``, where ``steep`` is a steep path in 0,1 format,
-        and ``path`` a Dyck path in 0,1 format.
+
+        A pair ``(steep, path)``, where ``steep`` is a steep path
+        in 0,1 format, and ``path`` a Dyck path in 0,1 format.
         """
         mirtree = self.tree.left_right_symmetry()
         path = mirtree.to_dyck_word()
@@ -288,41 +294,41 @@ class LACTree:
         for x in mirtree.pre_order_traversal_iter():
             mycolor = self.color[x.label()]
             if mycolor in colorseen:
-                steep += [0,1]
+                steep += [0, 1]
             else:
                 steep += [1]
                 colorseen[mycolor] = 1
         steep += [0] * len(self.alpha)
         steep = steep[1:]
         return (steep, list(path))
-        
+
     @staticmethod
     def from_permutation(perm, alpha):
         r"""
-        Returns an LAC-tree in bijection with the given (alpha,231)-avoiding 
+        Returns an LAC-tree in bijection with the given (alpha,231)-avoiding
         permutation. Do not provide any check (yet).
-        
+
         INPUT:
-        
+
         - ``perm``: a supposedly (alpha,231)-avoiding permutation
         - ``alpha``: a composition indicating the parabolic quotient
-        
+
         OUTPUT:
-        
+
         An LAC-tree in bijection with this (alpha,231)-avoiding permutation
         """
         BT = Permutation(perm).binary_search_tree()
         T = BT.to_ordered_tree_right_branch()
         return LACTree(T, alpha)
-    
+
     def to_permutation(self):
         r"""
         Returns an (alpha,231)-avoiding in bijection with the LAC-tree
-        
+
         OUTPUT:
-        
-        A pair ``(perm, alpha)``, where ``perm`` is an (alpha,231)-avoiding 
-        permutation, and ``alpha`` a composition indicating the parabolic 
+
+        A pair ``(perm, alpha)``, where ``perm`` is an (alpha,231)-avoiding
+        permutation, and ``alpha`` a composition indicating the parabolic
         quotient.
         """
         n = sum(self.alpha)
@@ -340,19 +346,19 @@ class LACTree:
         for r in regions:
             perm.extend(r)
         return (perm, self.alpha)
-        
+
     @staticmethod
     def from_walk_in_quadrant(walk):
         r"""
         Returns an LAC-tree in bijection with the given walk in the quadrant
         with step sets [0, 1], [1, -1], [-1, 1]. Checks the input for sanity.
-        
+
         INPUT:
-        
+
         - ``walk``: a walk in the quadrant
-        
+
         OUTPUT:
-        
+
         An LAC-tree in bijection with this (alpha,231)-avoiding permutation
         """
         # check step set
@@ -364,7 +370,7 @@ class LACTree:
             if (-1 == s[0]) and (1 == s[1]):
                 continue
             raise ValueError('Incorrect step set')
-        
+
         # check quandrant and endpoint
         myx, myy = 0, 0
         for s in walk:
@@ -374,7 +380,7 @@ class LACTree:
                 raise ValueError('Walk out of quadrant')
         if myy != 0:
             raise ValueError('Walk not ending on x-axis')
-        
+
         # convert to steep pair
         steep, path = [], []
         for s in walk:
@@ -384,15 +390,15 @@ class LACTree:
             elif (-1 == s[0]):
                 steep += [0, 1]
         steep += [0] * (len(path) - len(steep))
-        
+
         return LACTree.from_steep_pair(steep, path)
-    
+
     def to_walk_in_quadrant(self):
         r"""
         Returns a walk in the quadrant in bijection with the LAC-tree
-        
+
         OUTPUT:
-        
+
         A walk in the quadrant with step sets [0, 1], [1, -1], [-1, 1]
         """
         steep, path = self.to_steep_pair()
@@ -411,18 +417,18 @@ class LACTree:
                 else:
                     walk.append([0, 1])
         return walk
-    
+
     @staticmethod
     def random_element(nn):
         r"""
         Returns a random LAC-tree
-        
+
         INPUT:
-        
+
         - ``n`` -- An expected size of the random LAC-tree
-        
+
         OUTPUT:
-        
+
         A random LAC-tree, drawn uniformly from LAC-trees of the same size. The
         size can vary between ``0.9n`` and ``1.5n``. The algorithm is based on
         rejection sampling on walks in the quadrant.
@@ -450,10 +456,8 @@ class LACTree:
                         flag = True
                         break
             return walk
-        
+
         if nn > 60:
             print("Caution: exponential runtime, may take some time.")
-        
+
         return LACTree.from_walk_in_quadrant(random_walk_in_quadrant(nn*2))
-    
-    
