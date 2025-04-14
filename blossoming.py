@@ -81,9 +81,9 @@ class TamariBlossomingTree:
         def aux(tree):
             accu = []
             for t in tree:
-                if not t: # a bud
+                if not t:  # a bud
                     accu.append(1)
-                else: # not a bud, but an edge to the next subtree
+                else:  # not a bud, but an edge to the next subtree
                     accu.append(-1)
                     accu.extend(aux(t))
                     accu.append(-1)
@@ -104,12 +104,12 @@ class TamariBlossomingTree:
         def aux(tree, budleg, budcnt):
             rlabel = tree.label()
             for st in tree:
-                if not st: # bud
+                if not st:  # bud
                     if rlabel not in budcnt:
                         budcnt[rlabel] = 0
                     budcnt[rlabel] += 1
                     budleg.append(((rlabel,), budcnt[rlabel]))
-                else: # edge, two legs
+                else:  # edge, two legs
                     budleg.append(((rlabel, st.label()), 1))
                     aux(st, budleg, budcnt)
                     budleg.append(((rlabel, st.label()), 2))
@@ -140,7 +140,7 @@ class TamariBlossomingTree:
         curnode, curord = (self.tree.label(),), 1
         morder = [curnode]
         while True:
-            curord = 3 - curord # possible values are 1 and 2
+            curord = 3 - curord  # possible values are 1 and 2
             if (curnode, curord) not in matchdict:
                 break
             curedge, curord = matchdict[curnode, curord]
@@ -165,7 +165,7 @@ class TamariBlossomingTree:
         r'''
         Internal function. Use a recursive approach to compute the canonical
         labeling of a tree without using node_number, which is very costly.
-        More precisely, it is quadratic.
+        More precisely, it is not linear, and quadratic in the worst case.
         '''
         def aux(tree: OrderedTree, curl: list[int]) -> LabelledOrderedTree:
             l: int = curl[0]
@@ -232,7 +232,7 @@ class TamariBlossomingTree:
             while ridx != dvec[ridx]:
                 ridx -= 1
             ltree = from_dual_bracket_vector(dvec[:ridx])
-            rtree = from_dual_bracket_vector(dvec[ridx+1:])
+            rtree = from_dual_bracket_vector(dvec[ridx + 1:])
             return BinaryTree([ltree, rtree])
 
         # get the orders of nodes and edges
@@ -267,7 +267,7 @@ class TamariBlossomingTree:
         def traversal(node, parent, cycord):
             # internal function, which go through the tree given by cycord
             # we provide parent to know where to cut
-            if node == -1: # a bud
+            if node == -1:  # a bud
                 return []
             children = cycord[node]
             if parent in cycord[node]:
@@ -286,12 +286,12 @@ class TamariBlossomingTree:
         n = len(bvec)
 
         # construct the edges between nodes, with their order
-        upper = [[] for _ in range(n + 1)] # neighbors by upper arcs
-        lower = [[] for _ in range(n + 1)] # neighbors by lower arcs
+        upper = [[] for _ in range(n + 1)]  # neighbors by upper arcs
+        lower = [[] for _ in range(n + 1)]  # neighbors by lower arcs
         for i in range(n):
             a, b = i - dvec[i], bvec[i] + i + 1
-            upper[a].append(b) # counter-clockwise
-            lower[b].append(a) # clockwise
+            upper[a].append(b)  # counter-clockwise
+            lower[b].append(a)  # clockwise
         # edges in counterclockwise order (left to right for trees)
         # buds are represented by -1
         cycord = [[-1] + lower[i][::-1] + [-1] + upper[i] for i in range(n + 1)]
@@ -402,7 +402,7 @@ class TamariBlossomingTree:
                           facecolor='black', zorder=2)
 
         def semicir(x1, x2, isupper):
-            sec = (0, pi) if isupper else (pi, 2*pi)
+            sec = (0, pi) if isupper else (pi, 2 * pi)
             color = 'blue' if isupper else 'red'
             return arc([(x1 + x2) / 2, 0], (x2 - x1) / 2, sector=sec, zorder=1,
                        rgbcolor=color)
@@ -425,7 +425,7 @@ class TamariBlossomingTree:
 
         # draw the vertices, black circle for tree node, white squares for edges
         n = self.size
-        for i in range(2 * n + 1): # tree nodes
+        for i in range(2 * n + 1):  # tree nodes
             if i % 2 == 0:
                 G += cirnode(i, 0)
                 if arrow:
@@ -442,10 +442,10 @@ class TamariBlossomingTree:
         # draw the arcs (tree edges), depending on options
         norder, eorder = self.node_order, self.edge_order
         for i in range(n):
-            k, l = eorder[i]
-            k, l = sorted((norder.index(k), norder.index(l)))
-            G += arcfct(k * 2, i * 2 + 1, True) # upper arc
-            G += arcfct(i * 2 + 1, l * 2, False) # lower arc
+            nidx1, nidx2 = eorder[i]
+            k, m = sorted((norder.index(nidx1), norder.index(nidx2)))
+            G += arcfct(k * 2, i * 2 + 1, True)   # upper arc
+            G += arcfct(i * 2 + 1, m * 2, False)  # lower arc
         G.axes(show=False)
         return G
 
@@ -459,17 +459,17 @@ class TamariBlossomingTree:
         '''
         def aux(t, buds, dyck):
             for st in t:
-                if not st: # bud
+                if not st:  # bud
                     buds.append(st.label())
                     dyck.append(1)
-                else: # edge and subtree
+                else:  # edge and subtree
                     dyck.append(-1)
                     aux(st, buds, dyck)
                     dyck.append(-1)
             return
 
-        buds = [0] # the root bud
-        dyck = [1] # the root bud
+        buds = [0]  # the root bud
+        dyck = [1]  # the root bud
         aux(tree, buds, dyck)
 
         # find the latest lowest point
@@ -531,7 +531,7 @@ class TamariBlossomingTree:
             # Internal function, construct a plane tree out of the cycle order
             # provide parent to know where to cut
             pidx = cycord[node].index(parent)
-            stnodes = cycord[node][pidx+1:] + cycord[node][:pidx]
+            stnodes = cycord[node][pidx + 1:] + cycord[node][:pidx]
             return [traverse(stn, node, cycord) for stn in stnodes]
 
         # check buds
@@ -554,26 +554,26 @@ class TamariBlossomingTree:
                 continue
             color = 0
             curpos = bud
-            while curpos != 0: # going up to the root
+            while curpos != 0:  # going up to the root
                 prevpos = curpos
                 curpos = cycord[curpos][0]
                 pidx = cycord[curpos].index(prevpos)
-                for sibling in cycord[curpos][pidx+1:]:
-                    if len(cycord[sibling]) == 1: # a bud
+                for sibling in cycord[curpos][pidx + 1:]:
+                    if len(cycord[sibling]) == 1:  # a bud
                         color = 1 - color
-                color = 1 - color # going to the opposite half-edge
-            dcolor[i] = 1 - color # accounting for the root bud
+                color = 1 - color  # going to the opposite half-edge
+            dcolor[i] = 1 - color  # accounting for the root bud
 
         # select against colors
         if sum(dcolor) != 1:
             raise ValueError('Invalide blossoming tree: bud colors')
-        didx = dcolor.index(1) # select the opposite color
+        didx = dcolor.index(1)  # select the opposite color
         if random_bud:
             didx = randrange(2)
         dangling = dangling[didx]
-        rroot = cycord[dangling][0] # the only neighbor of a bud is the root
+        rroot = cycord[dangling][0]  # the only neighbor of a bud is the root
         rtree = traverse(rroot, dangling, cycord)
-        return TamariBlossomingTree(rtree) # can do with a list
+        return TamariBlossomingTree(rtree)  # can do with a list
 
     def reflection(self) -> Self:
         r'''
@@ -616,8 +616,8 @@ class TamariBlossomingTree:
             py = p[1] + sin(rad) * dist
             return (px, py)
 
-        def plot_bud(origp, rad, l, bud, dbuds):
-            p2 = shift_point(pos[rn], rad, l)
+        def plot_bud(origp, rad, m, bud, dbuds):
+            p2 = shift_point(pos[rn], rad, m)
             w = 1
             color = 'red'
             if bud == dbuds[0]:
@@ -692,9 +692,9 @@ class TamariBlossomingTree:
         for rn in realnodes:
             ncnt = len(cycord[rn])
             budidx = [i for i in range(ncnt) if degs[cycord[rn][i]] == 1]
-            if budidx[1] - budidx[0] in [1, ncnt - 1]: # two consecutive buds
+            if budidx[1] - budidx[0] in [1, ncnt - 1]:  # two consecutive buds
                 rad1 = rad_dir(pos[rn], pos[cycord[rn][budidx[0] - 1]])
-                eidx2 = budidx[1] + 1 - ncnt # using negative index for cyclic
+                eidx2 = budidx[1] + 1 - ncnt  # using negative index for cyclic
                 rad2 = rad_dir(pos[rn], pos[cycord[rn][eidx2]])
                 if rad2 <= rad1:
                     rad2 += pi * 2
@@ -703,7 +703,7 @@ class TamariBlossomingTree:
                 for i in range(2):
                     G += plot_bud(pos[rn], rbuds[i], budlen,
                                   cycord[rn][budidx[i]], dbuds)
-            else: # two non-consecutive buds, we put each one in the middle
+            else:  # two non-consecutive buds, we put each one in the middle
                 for i in range(2):
                     rad1 = rad_dir(pos[rn], pos[cycord[rn][budidx[i] - 1]])
                     eidx2 = budidx[i] + 1 - ncnt
@@ -732,13 +732,13 @@ class TamariBlossomingTree:
         The list of arcs in the smooth drawing, represented by leaves on its
         both ends.
         '''
-        def aux(bt, offset, l):
+        def aux(bt, offset, arcs):
             if not bt:
                 return
-            l.append((offset, offset + bt.node_number()))
+            arcs.append((offset, offset + bt.node_number()))
             stlist = list(bt)
-            aux(stlist[0], offset, l)
-            aux(stlist[1], offset + stlist[0].node_number() + 1, l)
+            aux(stlist[0], offset, arcs)
+            aux(stlist[1], offset + stlist[0].node_number() + 1, arcs)
 
         arclist = []
         aux(btree, 0, arclist)
@@ -777,7 +777,7 @@ class TamariBlossomingTree:
                           facecolor='black', zorder=2)
 
         def semicir(x1, x2, isupper):
-            sec = (0, pi) if isupper else (pi, 2*pi)
+            sec = (0, pi) if isupper else (pi, 2 * pi)
             color = 'blue' if isupper else 'red'
             return arc([(x1 + x2) / 2, 0], (x2 - x1) / 2, sector=sec, zorder=1,
                        rgbcolor=color)
@@ -788,14 +788,14 @@ class TamariBlossomingTree:
 
         # draw the vertices, black circle for tree node, white squares for edges
         n = self.size
-        for i in range(n + 1): # tree nodes
+        for i in range(n + 1):  # tree nodes
             G += cirnode(i, 0)
 
         # draw the arcs according to upper and lower trees
         trees = self.to_tamari()
         for i in range(2):
             for e in TamariBlossomingTree.__binary_tree_arcs(trees[i]):
-                G += semicir(e[0], e[1], i == 1) # 0 is lower, 1 is upper
+                G += semicir(e[0], e[1], i == 1)  # 0 is lower, 1 is upper
         G.axes(show=False)
         return G
 
@@ -823,7 +823,7 @@ class TamariBlossomingTree:
                 if len(idx) != 2 or idx[1] - idx[0] != 1:
                     return False
             for st in tree:
-                if not e and not aux(st): # an internal node failing the test
+                if not st and not aux(st):  # an internal node failing the test
                     return False
             return True
         return aux(self.tree, isroot=True)
@@ -866,15 +866,16 @@ class RandomPath:
             raise ValueError("Invalid parameter")
         # get a random set with each element appearing with prob 1/k
         # the size of the set is close to n, with sqrt(n) standard deviation
-        s: list[int] = []  # the random set
-        cs: list[int] = [] # its complement
+        # better than unranking in terms of performance
+        s: list[int] = []   # the random set
+        cs: list[int] = []  # its complement
         for i in range(k * n + 1):
             if randrange(k) == 1:
                 s.append(i)
             else:
                 cs.append(i)
         cnt: int = len(s)
-        if cnt > n: # First case: too many elements
+        if cnt > n:  # First case: too many elements
             # remove randomly until getting the correct number
             while cnt > n:
                 s[randrange(cnt)] = s[-1]
@@ -891,22 +892,23 @@ class RandomPath:
         return s
 
     @staticmethod
-    def cutting(l: list[float], size: int) -> list[(float, int)]:
+    def cutting(cardlist: list[float], size: int) -> list[(float, int)]:
         '''
         Generate the cutting ratio list according to a list of (relative) count
         of objects of sizes from ``0`` to ``size``. The cutting ratio list tells
         us the probability to generate pairs of each size separation.
 
         INPUT:
-        - ``l``: a list of the number of objects of sizes from ``0`` to ``size``
+        - ``cardlist``: a list of the cardinality of objects of sizes from
+        ``0`` to ``size``
         - ``size``: the size of elements to generate
         '''
         # check list size
-        if len(l) != size + 1:
+        if len(cardlist) != size + 1:
             raise ValueError("Invalid parameter: l does not have correct size.")
         cutting: list[(float, int)] = []
         for i in range(size + 1):
-            cutting.append((l[i] * l[size - i], i))
+            cutting.append((cardlist[i] * cardlist[size - i], i))
         cutting.sort(key=lambda x: x[0], reverse=True)
         return cutting
 
@@ -959,7 +961,7 @@ class TamariBlossomingTreeFactory:
         # compute the size of trees
         # normalized by dividing the growth factor 4^4 / 3^3
         # precision is enough, as the rest grows as n^(-3/2)
-        l: list[float] = [1.0] # no need to use numerical_approx with prec
+        l: list[float] = [1.0]  # no need to use numerical_approx with prec
         for i in range(1, size + 1):
             nextitem = l[-1] * (4 * i - 1) * (4 * i - 2) * (4 * i - 3) / 64
             nextitem /= (3 * i + 1) * i * (3 * i - 1) / 9
@@ -997,13 +999,13 @@ class TamariBlossomingTreeFactory:
         '''
         stack = [[0, []]]
         for step in path:
-            if step == 3: # new node
+            if step == 3:  # new node
                 stack.append([0, []])
-            else: # depending on type
-                if stack[-1][0] < 2: # add bud
+            else:  # depending on type
+                if stack[-1][0] < 2:  # add bud
                     stack[-1][0] += 1
                     stack[-1][1].append([])
-                else: # subtree completed
+                else:  # subtree completed
                     subtree = stack.pop()[1]
                     stack[-1][1].append(subtree)
 
@@ -1053,18 +1055,18 @@ class SynchronizedBlossomingTreeFactory:
         path = RandomPath.gen_path(size, 3)
         stack = [[0, []]]
         for step in path:
-            if step == 2: # new nodes
+            if step == 2:  # new nodes
                 stack.append([0, []])
-            else: # depending on type
-                if stack[-1][0] == 0: # add two buds
+            else:  # depending on type
+                if stack[-1][0] == 0:  # add two buds
                     stack[-1][0] = 1
                     stack[-1][1].append([])
                     stack[-1][1].append([])
-                else: # subtree completed
+                else:  # subtree completed
                     subtree = stack.pop()[1]
                     stack[-1][1].append(subtree)
         tree = stack[-1][1]
-        tree.append([]) # add the extra bud besides the root
+        tree.append([])  # add the extra bud besides the root
         return tree
 
     def random_element(self) -> TamariBlossomingTree:
@@ -1110,9 +1112,9 @@ class ModernBlossomingTreeFactory:
         self.size = size
         # compute the size of trees
         # two parts, each given by the series
-        # $1 + C(z) = 1 + \sum_{n \geq 1} \frac{2^{n-1}}{n+1} \binom{2n}{n} z^n$
+        # 1 + C(z) = 1 + \sum_{n \geq 1} \frac{2^{n-1}}{n+1} \binom{2n}{n} z^n
         # growth rate 8^n
-        l: list[float] = [8.0, 1.0] # float suffices as for other families
+        l: list[float] = [8.0, 1.0]  # float suffices as for other families
         for i in range(2, size + 1):
             l.append(l[-1] * (i - 0.5) / (i + 1))
         # counting for generation
@@ -1133,13 +1135,13 @@ class ModernBlossomingTreeFactory:
         OUTPUT:
         A list of corresponding trees
         '''
-        if not dtree: # empty tree
+        if not dtree:  # empty tree
             return []
-        if len(dtree) == 1 and not dtree[0]: # simple tree
+        if len(dtree) == 1 and not dtree[0]:  # simple tree
             return [OrderedTree([[], []])]
-        idx = len(dtree) - 1 # index of cutting
-        while idx > 0: # never check the first
-            if randrange(2) == 1: # bad color, B stops here
+        idx = len(dtree) - 1  # index of cutting
+        while idx > 0:  # never check the first
+            if randrange(2) == 1:  # bad color, B stops here
                 break
             idx -= 1
         idx += 1
@@ -1164,11 +1166,11 @@ class ModernBlossomingTreeFactory:
         OUTPUT:
         The corresponding B-tree
         '''
-        if not dtree: # empty tree
+        if not dtree:  # empty tree
             return OrderedTree([[], []])
-        idx = 0 # index of cutting
+        idx = 0  # index of cutting
         while idx < len(dtree):
-            if randrange(2) == 1: # bad color, B stops here
+            if randrange(2) == 1:  # bad color, B stops here
                 break
             idx += 1
         # first sequence: a sequence of B
@@ -1196,7 +1198,7 @@ class ModernBlossomingTreeFactory:
         OUTPUT:
         The corresponding A-tree
         '''
-        if not dtree: # empty tree, should not happen!
+        if not dtree:  # empty tree, should not happen!
             raise ValueError('Internal error on __genA')
         # first part: same as B, and there is already a separating bud
         treelist = [x for x in ModernBlossomingTreeFactory.__genB(dtree[0])]

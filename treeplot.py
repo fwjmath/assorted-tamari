@@ -13,7 +13,7 @@ plotted sub-trees, then combine them together while minimizing the size gap
 #  Distributed under the terms of the GNU General Public License (GPL)
 #  as published by the Free Software Foundation; either version 2 of
 #  the License, or (at your option) any later version.
-#                  http://www.gnu.org/licenses/
+#                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
 from sage.combinat.ordered_tree import LabelledOrderedTree
@@ -40,9 +40,9 @@ class TreePlot:
         keeping both subtrees at distance ``HORIZ``
         """
         # compute the common levels
-        l = min(len(prof1), len(prof2))
+        lvlcnt = min(len(prof1), len(prof2))
         # compute the largest deviation among common levels
-        dist = max([prof1[i] - prof2[i] for i in range(l)])
+        dist = max([prof1[i] - prof2[i] for i in range(lvlcnt)])
         # result: largest deviation plus horiz
         return dist + horiz
 
@@ -65,12 +65,13 @@ class TreePlot:
             commsize = min(len(prof), len(newprof))
             choice = max if isright else min
             shift = shift if isright else -shift
-            l = [choice(prof[i], newprof[i] + shift) for i in range(commsize)]
+            combine = [choice(prof[i], newprof[i] + shift)
+                       for i in range(commsize)]
             if len(prof) >= len(newprof):
-                l.extend(prof[commsize:])
+                combine.extend(prof[commsize:])
             else:
-                l.extend([x + shift for x in newprof[commsize:]])
-            return l
+                combine.extend([x + shift for x in newprof[commsize:]])
+            return combine
 
         # Case of leaf
         if not t:
@@ -182,7 +183,7 @@ class TreePlot:
         - ``fill``: fill color of nodes
         - ``thickness``: thickness of lines
         """
-        def draw(l, t, x, y, px, py, opt):
+        def draw(objs, t, x, y, px, py, opt):
             label, shifts = t[0]
             if label is None:
                 label = ''
@@ -190,17 +191,18 @@ class TreePlot:
             fcolor = opt['fill']
             if opt['cfunc'] is not None:
                 fcolor = opt['cfunc'](label)
-            l.append(circle((x, y), opt['radius'], fill=True,
-                            facecolor=fcolor, zorder=1))
-            l.append(text(str(label), (x, y), zorder=2))
+            objs.append(circle((x, y), opt['radius'], fill=True,
+                               facecolor=fcolor, zorder=1))
+            objs.append(text(str(label), (x, y), zorder=2))
             # draw the line linking to parent except for the root (y == 0)
             if y != 0:
-                l.append(line([(x, y), (px, py)], zorder=0, color=opt['linec'],
-                              thickness=opt['thick']))
+                objs.append(line([(x, y), (px, py)], zorder=0,
+                                 color=opt['linec'], thickness=opt['thick']))
             # draw subtrees recursively
             stlist = t[1]
             for i in range(len(stlist)):
-                draw(l, stlist[i], x + shifts[i], y - opt['vert'], x, y, opt)
+                draw(objs, stlist[i], x + shifts[i], y - opt['vert'],
+                     x, y, opt)
 
         # convert to labeled ordered tree
         t = LabelledOrderedTree(tree)

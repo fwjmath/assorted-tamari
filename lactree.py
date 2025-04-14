@@ -53,12 +53,12 @@ class LACTree:
         labeling, and ``color`` the color vector
         """
         n = sum(alpha)
-        if n+1 != T.node_number():
+        if n + 1 != T.node_number():
             raise ValueError('Inconsistent sizes of parameters')
 
         # initialization
         Tc = T.canonical_labelling()
-        color = [-1] * (n+2)
+        color = [-1] * (n + 2)
         stack = list(Tc)
         stack.reverse()
 
@@ -146,7 +146,7 @@ class LACTree:
         An LAC-tree in bijection with this bounce pair
         """
         n = sum(alpha)
-        if n*2 != len(dyck):
+        if n * 2 != len(dyck):
             raise ValueError('Inconsistent sizes of parameters')
         bounce = []
         for a in alpha:
@@ -159,7 +159,7 @@ class LACTree:
             raise ValueError('Incompatible parameters')
 
         # count children number by counting north steps on each x-coordinate
-        vsteps = [0] * (n+1)
+        vsteps = [0] * (n + 1)
         cur = 0
         x = 0
         while cur < len(dyck):
@@ -170,10 +170,10 @@ class LACTree:
             x += 1
 
         # construct tree
-        l = len(alpha)
-        dyckpost = n - alpha[l-1]
-        actives = [OrderedTree([]) for i in range(alpha[l-1])]
-        for region in range(l-2, -1, -1):
+        length = len(alpha)
+        dyckpost = n - alpha[length - 1]
+        actives = [OrderedTree([]) for i in range(alpha[length - 1])]
+        for region in range(length - 2, -1, -1):
             newactives = []
             for i in range(alpha[region]):
                 newnode = OrderedTree(actives[:vsteps[dyckpost]])
@@ -196,12 +196,12 @@ class LACTree:
         A pair ``(path, alpha)``, where ``path`` is a Dyck path in 0,1 format,
         and ``alpha`` the composition of the bounce path.
         """
-        l = len(self.alpha)
+        length = len(self.alpha)
         path = [1] * len(self.tree)
-        cvec = [[] for i in range(l+1)]
+        cvec = [[] for i in range(length + 1)]
         for x in self.tree.pre_order_traversal_iter():
             cvec[self.color[x.label()]].append(len(x))
-        for i in range(l):
+        for i in range(length):
             cvec[i].reverse()
             for k in cvec[i]:
                 path += [0]
@@ -238,7 +238,7 @@ class LACTree:
         marks = [True]
         for i in range(1, len(steep)):
             if steep[i] != 0:
-                marks.append(0 != steep[i-1])
+                marks.append(0 != steep[i - 1])
         marked = list(path)
         curptr = 0
         for i in range(len(marked)):
@@ -247,7 +247,7 @@ class LACTree:
                 curptr += 1
 
         # coloring
-        colorlist = [-1 for i in range(n+2)]
+        colorlist = [-1 for i in range(n + 2)]
         colorstack = [-1]
         colorptr = 0
         curcolor = -1
@@ -332,15 +332,14 @@ class LACTree:
         quotient.
         """
         n = sum(self.alpha)
-        l = len(self.alpha)
         labels = {}
         accu = 1
         for x in self.tree.post_order_traversal_iter():
             if 1 != x.label():
                 labels[x.label()] = accu
                 accu += 1
-        regions = [[] for i in range(l)]
-        for i in range(2, n+2):
+        regions = [[] for e in self.alpha]
+        for i in range(2, n + 2):
             regions[self.color[i]].append(labels[i])
         perm = []
         for r in regions:
@@ -362,13 +361,7 @@ class LACTree:
         An LAC-tree in bijection with this (alpha,231)-avoiding permutation
         """
         # check step set
-        for s in walk:
-            if (0 == s[0]) and (1 == s[1]):
-                continue
-            if (1 == s[0]) and (-1 == s[1]):
-                continue
-            if (-1 == s[0]) and (1 == s[1]):
-                continue
+        if any(tuple(s) not in set((0, 1), (1, -1), (-1, 1)) for s in walk):
             raise ValueError('Incorrect step set')
 
         # check quandrant and endpoint
@@ -384,7 +377,7 @@ class LACTree:
         # convert to steep pair
         steep, path = [], []
         for s in walk:
-            path.append((s[1]+1)//2)
+            path.append((s[1] + 1) // 2)
             if (0 == s[0]):
                 steep.append(1)
             elif (-1 == s[0]):
@@ -412,7 +405,7 @@ class LACTree:
                 steepptr += 1
                 while steep[steepptr] != 1:
                     steepptr += 1
-                if 0 == steep[steepptr-1]:
+                if 0 == steep[steepptr - 1]:
                     walk.append([-1, 1])
                 else:
                     walk.append([0, 1])
@@ -435,8 +428,8 @@ class LACTree:
         """
         # a function generating random walks
         def random_walk_in_quadrant(n):
-            lower = int(n*0.9)
-            upper = int(n*1.5)
+            lower = int(n * 0.9)
+            upper = int(n * 1.5)
             stepset = [[0, 1], [1, -1], [-1, 1]]
             flag = False
             walk = []
@@ -460,4 +453,4 @@ class LACTree:
         if nn > 60:
             print("Caution: exponential runtime, may take some time.")
 
-        return LACTree.from_walk_in_quadrant(random_walk_in_quadrant(nn*2))
+        return LACTree.from_walk_in_quadrant(random_walk_in_quadrant(nn * 2))

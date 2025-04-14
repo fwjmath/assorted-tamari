@@ -62,7 +62,7 @@ def get_level_list(v):
     ``i``
     """
     p, q = v.count(0), v.count(1)
-    lvl = [0 for i in range(q+1)]
+    lvl = [0 for i in range(q + 1)]
     tmp = 0
     ltmp = 0
     for i in v:
@@ -120,11 +120,11 @@ def NuTamariLattice(v):
         covering element.
         """
         # Initial coordinates and horizontal distance
-        x = [e[:p+1].count(0), e[:p+1].count(1)]
+        x = [e[:p + 1].count(0), e[:p + 1].count(1)]
         hdist = lvl[x[1]] - x[0]
 
         # Find the next point with the same horizontal distance
-        for j in range(p+1, len(e)):
+        for j in range(p + 1, len(e)):
             x[e[j]] += 1
             if hdist == (lvl[x[1]] - x[0]):
                 break
@@ -132,14 +132,14 @@ def NuTamariLattice(v):
         # Construct a new path with the portion switched
         e1 = list(e)
         for i in range(p, j):
-            e1[i] = e1[i+1]
+            e1[i] = e1[i + 1]
         e1[j] = 0
 
         return tuple(e1)
 
     def get_cover_elem(e):
-        return [swap(e, x) for x in range(len(v)-1)
-                if (e[x] == 0) and (e[x+1] == 1)]
+        return [swap(e, x) for x in range(len(v) - 1)
+                if (e[x] == 0) and (e[x + 1] == 1)]
 
     checkpath(v)
     lvl = get_level_list(v)
@@ -228,12 +228,12 @@ def dyck_to_pathpair(p):
     # v corresponds to the type of p
     # u corresponds to consecutive down steps of p
     i = 0
-    while i < 2*n:  # Stopping only when p[i] == 1
-        v.append(1 - p[i+1])
-        if p[i+1] == 0:
+    while i < 2 * n:  # Stopping only when p[i] == 1
+        v.append(1 - p[i + 1])
+        if p[i + 1] == 0:
             cnt = 0
             i += 1
-            while (i < 2*n) and (p[i] == 0):
+            while (i < 2 * n) and (p[i] == 0):
                 cnt += 1
                 i += 1
             u += [0] * (cnt - 1)
