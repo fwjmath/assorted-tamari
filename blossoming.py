@@ -7,7 +7,7 @@ each node has two buds, and each edge has two legs. Buds are matched with legs
 in a planar way, leaving only two dangling buds. The coloring can be replaced by
 marking one of the dangling buds. The blossoming tree is represented as a plane
 tree. We take the convention that the root bud is a dangling bud with red
-half-edges next to it in the counter-clockwise order 
+half-edges next to it in the counter-clockwise order
 
 REFERENCES:
 Fang--Fusy--Nadeau, arXiv:2312.13159 [math.CO]
@@ -21,8 +21,10 @@ Fang--Fusy--Nadeau, arXiv:2312.13159 [math.CO]
 #  the License, or (at your option) any later version.
 #                  http://www.gnu.org/licenses/
 # ****************************************************************************
+from typing import Self
+from math import acos, cos, sin, pi
 
-from sage.graphs.graph import Graph
+from sage.all import DyckWords
 from sage.combinat.ordered_tree import OrderedTree, LabelledOrderedTree
 from sage.combinat.binary_tree import from_tamari_sorting_tuple, BinaryTree
 from sage.plot.graphics import Graphics
@@ -32,11 +34,9 @@ from sage.plot.circle import circle
 from sage.plot.arc import arc
 from sage.plot.polygon import polygon2d
 from sage.plot.arrow import arrow2d
-from sage.combinat.interval_posets import TamariIntervalPoset
-from sage.combinat.interval_posets import TamariIntervalPosets
-from math import acos, cos, sin
+from sage.combinat.interval_posets import (TamariIntervalPoset,
+                                           TamariIntervalPosets)
 from sage.misc.prandom import uniform, randrange
-from typing import Self
 
 
 # optional module for plotting blossoming trees
@@ -56,7 +56,6 @@ class TamariBlossomingTree:
         We do not suppose ``tree`` to be of type OrderedTree
         '''
         return len([x for x in tree if not x])
-    
 
     @staticmethod
     def __checkbuds(tree):
@@ -71,7 +70,6 @@ class TamariBlossomingTree:
         for st in tree:
             TamariBlossomingTree.__checkbuds(st)
         return
-
 
     @staticmethod
     def __matching_word(tree) -> list[int]:
@@ -90,15 +88,14 @@ class TamariBlossomingTree:
                     accu.extend(aux(t))
                     accu.append(-1)
             return accu
-        
+
         return aux(tree)
 
-    
     def __get_meandric_order(self) -> tuple[list[int], list[int]]:
         r'''
         Internal function. Computes the order of nodes and edges in the meandric
         representation. In the intermediate steps, we have
-        
+
         - Buds are represented by the label of its node and 1, 2 as the order
         of buds of the same node
         - Legs are represented by the label of both its ends, and 1, 2 as the
@@ -120,15 +117,15 @@ class TamariBlossomingTree:
 
         # first compute the list of buds and legs
         budleg = [((self.tree.label(),), 1)]
-        budcnt = {self.tree.label() : 1}
+        budcnt = {self.tree.label(): 1}
         aux(self.tree, budleg, budcnt)
 
         # then match them up
         matching, stack = [], []
         for halfedge in budleg:
-            if len(halfedge[0]) == 1: # bud
+            if len(halfedge[0]) == 1:  # bud
                 stack.append(halfedge)
-            else: # leg
+            else:  # leg
                 matching.append((stack.pop(), halfedge))
         if len(stack) != 2:
             raise ValueError('Error during matching: incorrect matching')
@@ -159,10 +156,9 @@ class TamariBlossomingTree:
         # compute both node order and edge order
         norder = [morder[i][0] for i in range(0, len(morder), 2)]
         eorder = [morder[i] for i in range(1, len(morder), 2)]
-        
+
         # Finally, we return the order
         return norder, eorder
-
 
     @staticmethod
     def __canon_label(tree: OrderedTree) -> LabelledOrderedTree:
@@ -172,12 +168,11 @@ class TamariBlossomingTree:
         More precisely, it is quadratic.
         '''
         def aux(tree: OrderedTree, curl: list[int]) -> LabelledOrderedTree:
-            l : int = curl[0]
+            l: int = curl[0]
             curl[0] += 1
             return LabelledOrderedTree([aux(x, curl) for x in tree],
                                        label=l)
         return aux(tree, [1])
-    
 
     def __init__(self, tree):
         r'''
@@ -185,7 +180,7 @@ class TamariBlossomingTree:
         root as a bud, so every internal node has two leaves, except the root
         which has only one. We also need to check that the root is really a
         dangling node
-        
+
         INPUT:
         - ``tree``: a plane tree satisfying the given condition
         '''
@@ -196,7 +191,7 @@ class TamariBlossomingTree:
         # check for all nodes
         for st in tree:
             TamariBlossomingTree.__checkbuds(st)
-        
+
         # check for matching (whether the root is a dangling bud)
         mword = TamariBlossomingTree.__matching_word(tree)
         ht = 0
@@ -214,14 +209,12 @@ class TamariBlossomingTree:
         self.node_order, self.edge_order = self.__get_meandric_order()
         return
 
-
     def to_plane_tree(self) -> OrderedTree:
         r'''
         Returns the blossoming tree as an OrderedTree. The buds are simply
         leaves.
         '''
         return OrderedTree(self.tree)
-    
 
     def to_tamari(self) -> tuple[BinaryTree, BinaryTree]:
         r'''
@@ -241,7 +234,7 @@ class TamariBlossomingTree:
             ltree = from_dual_bracket_vector(dvec[:ridx])
             rtree = from_dual_bracket_vector(dvec[ridx+1:])
             return BinaryTree([ltree, rtree])
-        
+
         # get the orders of nodes and edges
         norder = self.node_order
         eorder = self.edge_order
@@ -254,12 +247,10 @@ class TamariBlossomingTree:
             dvec.append(i - idx[0])
 
         # get the trees
-        n = len(eorder)
         ltree = from_tamari_sorting_tuple(bvec)
         rtree = from_dual_bracket_vector(dvec)
         return ltree, rtree
 
-    
     @staticmethod
     def from_tamari(ltree, htree) -> Self:
         r'''
@@ -283,7 +274,7 @@ class TamariBlossomingTree:
                 pidx = children.index(parent)
                 children = children[pidx + 1:] + children[:pidx]
             return [traversal(x, node, cycord) for x in children]
-        
+
         # initalization and verification
         btl, bth = BinaryTree(ltree), BinaryTree(htree)
         if not btl.tamari_lequal(bth):
@@ -311,7 +302,6 @@ class TamariBlossomingTree:
         ptree = traversal(0, -2, cycord)
         return TamariBlossomingTree(ptree)
 
-
     def to_TIP(self) -> TamariIntervalPoset:
         r'''
         Returns the corresponding TamariIntervalPoset object in bijection with
@@ -319,7 +309,6 @@ class TamariBlossomingTree:
         '''
         t1, t2 = self.to_tamari()
         return TamariIntervalPosets.from_binary_trees(t1, t2)
-
 
     @staticmethod
     def from_TIP(tip) -> Self:
@@ -331,7 +320,6 @@ class TamariBlossomingTree:
         '''
         t1, t2 = tip.lower_binary_tree(), tip.upper_binary_tree()
         return TamariBlossomingTree.from_tamari(t1, t2)
-    
 
     @staticmethod
     def binary_tree_plot(btree) -> Graphics:
@@ -363,7 +351,7 @@ class TamariBlossomingTree:
         n = bt.node_number()
         G = Graphics()
         G.set_aspect_ratio(1)
-                
+
         # get node positions
         points = []
         aux(bt, 0, n, points)
@@ -377,8 +365,7 @@ class TamariBlossomingTree:
             G += line([(x, y), (x - y, 0)], zorder=1, thickness=1)
         G.axes(show=False)
         return G
-        
-    
+
     def tamari_dual(self) -> Self:
         r'''
         Perform the half-turn symmetric on meandric tree and return the result.
@@ -430,7 +417,7 @@ class TamariBlossomingTree:
             color = 'blue' if isupper else 'red'
             return bezier_path([[(x1, 0), cp1, cp2, (x2, 0)]], zorder=1,
                                rgbcolor=color)
-        
+
         # initialization
         G = Graphics()
         G.set_aspect_ratio(1)
@@ -461,7 +448,6 @@ class TamariBlossomingTree:
             G += arcfct(i * 2 + 1, l * 2, False) # lower arc
         G.axes(show=False)
         return G
-
 
     @staticmethod
     def __find_dangling_bud(tree: LabelledOrderedTree) -> list[int]:
@@ -504,9 +490,8 @@ class TamariBlossomingTree:
         oneidx += lidx
         if oneidx > len(ndyck):
             oneidx -= len(ndyck)
-        budcnt2 = dyck[:oneidx].count(1)            
+        budcnt2 = dyck[:oneidx].count(1)
         return [buds[budcnt], buds[budcnt2]]
-
 
     @staticmethod
     def __get_cycle_order(t: LabelledOrderedTree) -> list[int]:
@@ -521,12 +506,11 @@ class TamariBlossomingTree:
             cycord[tree.label()] = [parent] + [st.label() for st in tree]
             for st in tree:
                 aux(st, tree.label(), cycord)
-        
+
         cycord = {}
         cycord[0] = [t.label()]
         aux(t, 0, cycord)
         return cycord
-
 
     @staticmethod
     def from_plane_tree(tree, skip_check=False, random_bud=False) -> Self:
@@ -559,7 +543,7 @@ class TamariBlossomingTree:
 
         tree = TamariBlossomingTree.__canon_label(tree)
         dangling = TamariBlossomingTree.__find_dangling_bud(tree)
-        
+
         # compute bud color
         cycord = TamariBlossomingTree.__get_cycle_order(tree)
         dcolor = [0, 0]
@@ -579,7 +563,7 @@ class TamariBlossomingTree:
                         color = 1 - color
                 color = 1 - color # going to the opposite half-edge
             dcolor[i] = 1 - color # accounting for the root bud
-        
+
         # select against colors
         if sum(dcolor) != 1:
             raise ValueError('Invalide blossoming tree: bud colors')
@@ -590,7 +574,6 @@ class TamariBlossomingTree:
         rroot = cycord[dangling][0] # the only neighbor of a bud is the root
         rtree = traverse(rroot, dangling, cycord)
         return TamariBlossomingTree(rtree) # can do with a list
-    
 
     def reflection(self) -> Self:
         r'''
@@ -601,16 +584,15 @@ class TamariBlossomingTree:
         OUTPUT:
         A blossoming tree that is the mirror image of the current one. Not to be
         confused with the Tamari dual.
-        '''        
+        '''
         tree = self.to_plane_tree().left_right_symmetry()
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True)
 
-    
     def plot_blossoming(self, aspect=1.0, layout=None) -> Graphics:
         r'''
         Plot the blossoming tree of ``self``, using the plot of OrderedTree, but
         with buds well spaced.
-        
+
         INPUT:
         - ``aspect``: ratio of aspect, default to 1.0
         - ``layout``: the algorithm for layout, with three possible options:
@@ -645,7 +627,7 @@ class TamariBlossomingTree:
                 w = 2
                 color = 'darkgreen'
             return line([pos[rn], p2], rgbcolor=color, thickness=w, zorder=1)
-        
+
         # construct the graph and the embedding
         t = LabelledOrderedTree([self.tree], label=0)
         cycord = TamariBlossomingTree.__get_cycle_order(self.tree)
@@ -654,7 +636,7 @@ class TamariBlossomingTree:
         realnodes = [i for i in range(n) if degs[i] > 1]
         g = t.to_undirected_graph()
         # using clockwise direction, instead of counterclockwise for trees
-        embed = {x : cycord[x][::-1] for x in cycord}
+        embed = {x: cycord[x][::-1] for x in cycord}
         g.set_embedding(embed)
         # use appropriate layout algorithm
         pos = None
@@ -670,11 +652,11 @@ class TamariBlossomingTree:
             pos = g.layout_planar(on_embedding=embed, external_face=(0, 1))
         else:
             raise ValueError('Invalid option for parameter "layout"')
-        
+
         # Initialize the graphic
         G = Graphics()
         G.set_aspect_ratio(aspect)
-        
+
         # Normalize node positions
         xcoords = [pos[i][0] for i in realnodes]
         minx = min(xcoords)
@@ -694,7 +676,7 @@ class TamariBlossomingTree:
                 edlen = euclid_dist(pos[n1], pos[n2])
                 if minedge is None or minedge > edlen:
                     minedge = edlen
-        
+
         # draw the real nodes (not the buds)
         for node in realnodes:
             G += circle(pos[node], 0.02 * edlen, fill=True, zorder=2)
@@ -715,7 +697,7 @@ class TamariBlossomingTree:
                 eidx2 = budidx[1] + 1 - ncnt # using negative index for cyclic
                 rad2 = rad_dir(pos[rn], pos[cycord[rn][eidx2]])
                 if rad2 <= rad1:
-                    rad2 += math.pi * 2
+                    rad2 += pi * 2
                 # trisection of angle
                 rbuds = [rad1 + (rad2 - rad1) / 3 * (1 + i) for i in range(2)]
                 for i in range(2):
@@ -727,7 +709,7 @@ class TamariBlossomingTree:
                     eidx2 = budidx[i] + 1 - ncnt
                     rad2 = rad_dir(pos[rn], pos[cycord[rn][eidx2]])
                     if rad2 <= rad1:
-                        rad2 += math.pi * 2
+                        rad2 += pi * 2
                     rbud = (rad1 + rad2) / 2
                     G += plot_bud(pos[rn], rbud, budlen,
                                   cycord[rn][budidx[i]], dbuds)
@@ -736,19 +718,18 @@ class TamariBlossomingTree:
         G.axes(show=False)
         return G
 
-
     @staticmethod
     def __binary_tree_arcs(btree: BinaryTree) -> list[tuple[int]]:
         '''
         Internal function. Returns the list of arcs in the smooth drawing of a
         given binary tree.
-        
+
         INPUT:
-        - ``btree``: a binary tree, which can be a BinaryTree or an 
+        - ``btree``: a binary tree, which can be a BinaryTree or an
                        OrderedTree that happens to be binary
-        
+
         OUTPUT:
-        The list of arcs in the smooth drawing, represented by leaves on its 
+        The list of arcs in the smooth drawing, represented by leaves on its
         both ends.
         '''
         def aux(bt, offset, l):
@@ -758,12 +739,11 @@ class TamariBlossomingTree:
             stlist = list(bt)
             aux(stlist[0], offset, l)
             aux(stlist[1], offset + stlist[0].node_number() + 1, l)
-        
+
         arclist = []
         aux(btree, 0, arclist)
         return arclist
-    
-    
+
     @staticmethod
     def binary_tree_smooth_drawing(btree, color='blue') -> Graphics:
         r'''
@@ -787,8 +767,7 @@ class TamariBlossomingTree:
                      rgbcolor=color)
         G.axes(show=False)
         return G
-    
-    
+
     def smooth_drawing(self) -> Graphics:
         r'''
         Plot the smooth drawing of ``self``
@@ -820,7 +799,6 @@ class TamariBlossomingTree:
         G.axes(show=False)
         return G
 
-
     def is_synchronized(self) -> bool:
         r'''
         Returns whether the Tamari interval presented by the current blossoming
@@ -850,7 +828,6 @@ class TamariBlossomingTree:
             return True
         return aux(self.tree, isroot=True)
 
-
     def is_modern(self) -> bool:
         r'''
         Returns whether the Tamari interval associated to the current blossoming
@@ -861,7 +838,6 @@ class TamariBlossomingTree:
         '''
         return self.to_TIP().is_modern()
 
-    
 
 class RandomPath:
     r'''
@@ -883,21 +859,21 @@ class RandomPath:
 
         OUTPUT:
         A list of elements in the random combination of ``n`` elements among
-        integers from ``1`` to ``kn+1``, not necessary in order. 
+        integers from ``1`` to ``kn+1``, not necessary in order.
         '''
         # test validity
         if n < 0 or k <= 1:
             raise ValueError("Invalid parameter")
         # get a random set with each element appearing with prob 1/k
         # the size of the set is close to n, with sqrt(n) standard deviation
-        s : list[int] = []  # the random set
-        cs : list[int] = [] # its complement
+        s: list[int] = []  # the random set
+        cs: list[int] = [] # its complement
         for i in range(k * n + 1):
             if randrange(k) == 1:
                 s.append(i)
             else:
                 cs.append(i)
-        cnt : int = len(s)
+        cnt: int = len(s)
         if cnt > n: # First case: too many elements
             # remove randomly until getting the correct number
             while cnt > n:
@@ -907,7 +883,7 @@ class RandomPath:
         else:
             # add elements randomly until getting the correct number
             while cnt < n:
-                id : int = randrange(k * n + 1 - cnt)
+                id: int = randrange(k * n + 1 - cnt)
                 s.append(cs[id])
                 cs[id] = cs[-1]
                 cs.pop()
@@ -915,7 +891,7 @@ class RandomPath:
         return s
 
     @staticmethod
-    def cutting(l : list[float], size : int) -> list[(float, int)]:
+    def cutting(l: list[float], size: int) -> list[(float, int)]:
         '''
         Generate the cutting ratio list according to a list of (relative) count
         of objects of sizes from ``0`` to ``size``. The cutting ratio list tells
@@ -928,12 +904,11 @@ class RandomPath:
         # check list size
         if len(l) != size + 1:
             raise ValueError("Invalid parameter: l does not have correct size.")
-        cutting : list[(float, int)] = []
+        cutting: list[(float, int)] = []
         for i in range(size + 1):
             cutting.append((l[i] * l[size - i], i))
         cutting.sort(key=lambda x: x[0], reverse=True)
         return cutting
-
 
     @staticmethod
     def comb_to_path(n: int, k: int, uset: list[int]) -> list[int]:
@@ -952,7 +927,6 @@ class RandomPath:
         path.pop()
         return path
 
-
     @staticmethod
     def gen_path(n: int, k: int) -> list[int]:
         r'''
@@ -961,9 +935,8 @@ class RandomPath:
         '''
         uset = RandomPath.gen_comb(n, k)
         return RandomPath.comb_to_path(n, k, uset)
-    
-    
-    
+
+
 class TamariBlossomingTreeFactory:
     r'''
     This factory class is for random generation of Tamari blossoming trees of
@@ -986,7 +959,7 @@ class TamariBlossomingTreeFactory:
         # compute the size of trees
         # normalized by dividing the growth factor 4^4 / 3^3
         # precision is enough, as the rest grows as n^(-3/2)
-        l : list[float] = [1.0] # no need to use numerical_approx with prec
+        l: list[float] = [1.0] # no need to use numerical_approx with prec
         for i in range(1, size + 1):
             nextitem = l[-1] * (4 * i - 1) * (4 * i - 2) * (4 * i - 3) / 64
             nextitem /= (3 * i + 1) * i * (3 * i - 1) / 9
@@ -994,7 +967,6 @@ class TamariBlossomingTreeFactory:
         # counting for generation
         self.cutting = RandomPath.cutting(l, size)
         self.cutting_sum = sum([x[0] for x in self.cutting])
-
 
     def _rand_path(self) -> list[int]:
         r'''
@@ -1050,7 +1022,7 @@ class TamariBlossomingTreeFactory:
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
                                                     random_bud=True)
 
-    
+
 class SynchronizedBlossomingTreeFactory:
     r'''
     This factory class is for random generation of synchronized blossoming
@@ -1060,7 +1032,6 @@ class SynchronizedBlossomingTreeFactory:
     We note that synchronized blossoming trees come with the two buds of the
     same node always consecutive, and we simplify them by identifying them.
     '''
-
     def __init__(self, size: int):
         r'''
         Initialization
@@ -1071,7 +1042,6 @@ class SynchronizedBlossomingTreeFactory:
         if size <= 0:
             raise ValueError('Invalid parameter size.')
         self.size = size
-
 
     @staticmethod
     def __rand_tree(size) -> list[list[int]]:
@@ -1097,7 +1067,6 @@ class SynchronizedBlossomingTreeFactory:
         tree.append([]) # add the extra bud besides the root
         return tree
 
-
     def random_element(self) -> TamariBlossomingTree:
         r'''
         Generate a random synchronized blossoming tree of a given size
@@ -1105,7 +1074,6 @@ class SynchronizedBlossomingTreeFactory:
         tree = SynchronizedBlossomingTreeFactory.__rand_tree(self.size)
         return TamariBlossomingTree.from_plane_tree(tree, skip_check=True,
                                                     random_bud=True)
-
 
 
 class ModernBlossomingTreeFactory:
@@ -1144,13 +1112,12 @@ class ModernBlossomingTreeFactory:
         # two parts, each given by the series
         # $1 + C(z) = 1 + \sum_{n \geq 1} \frac{2^{n-1}}{n+1} \binom{2n}{n} z^n$
         # growth rate 8^n
-        l : list[float] = [8.0, 1.0] # float suffices as for other families
+        l: list[float] = [8.0, 1.0] # float suffices as for other families
         for i in range(2, size + 1):
             l.append(l[-1] * (i - 0.5) / (i + 1))
         # counting for generation
         self.cutting = RandomPath.cutting(l, size)
         self.cutting_sum = sum([x[0] for x in self.cutting])
-
 
     @staticmethod
     def __genC(dtree: OrderedTree) -> list[OrderedTree]:
@@ -1183,7 +1150,6 @@ class ModernBlossomingTreeFactory:
         treelist.extend(restlist)
         return treelist
 
-
     @staticmethod
     def __genB(dtree: OrderedTree) -> OrderedTree:
         r'''
@@ -1199,7 +1165,7 @@ class ModernBlossomingTreeFactory:
         The corresponding B-tree
         '''
         if not dtree: # empty tree
-            return OrderedTree([[],[]])
+            return OrderedTree([[], []])
         idx = 0 # index of cutting
         while idx < len(dtree):
             if randrange(2) == 1: # bad color, B stops here
@@ -1216,7 +1182,6 @@ class ModernBlossomingTreeFactory:
         # the second bud
         treelist.append(OrderedTree([]))
         return OrderedTree(treelist)
-
 
     @staticmethod
     def __genA(dtree: OrderedTree) -> OrderedTree:
@@ -1239,7 +1204,6 @@ class ModernBlossomingTreeFactory:
         restlist = ModernBlossomingTreeFactory.__genC(OrderedTree(dtree[1:]))
         treelist.extend(restlist)
         return OrderedTree(treelist)
-
 
     def random_element(self) -> TamariBlossomingTree:
         r'''

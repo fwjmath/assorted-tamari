@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 r"""
 Plotting arbitrary labeled trees
 
@@ -17,12 +16,12 @@ plotted sub-trees, then combine them together while minimizing the size gap
 #                  http://www.gnu.org/licenses/
 # ****************************************************************************
 
-from sage.combinat.ordered_tree import LabelledOrderedTree, OrderedTree
+from sage.combinat.ordered_tree import LabelledOrderedTree
 from sage.plot.graphics import Graphics
 from sage.plot.line import line
-from sage.plot.polygon import polygon2d
 from sage.plot.circle import circle
 from sage.plot.text import text
+
 
 class TreePlot:
 
@@ -37,8 +36,8 @@ class TreePlot:
         - ``prof2``: the left profile of the second subtree
 
         OUTPUT:
-        The distance between the two subtrees that is the smallest while keeping
-        both subtrees at distance ``HORIZ``
+        The distance between the two subtrees that is the smallest while
+        keeping both subtrees at distance ``HORIZ``
         """
         # compute the common levels
         l = min(len(prof1), len(prof2))
@@ -46,8 +45,7 @@ class TreePlot:
         dist = max([prof1[i] - prof2[i] for i in range(l)])
         # result: largest deviation plus horiz
         return dist + horiz
-    
-    
+
     @staticmethod
     def __compute_tree_profile(t: LabelledOrderedTree, horiz: float):
         r"""
@@ -62,9 +60,8 @@ class TreePlot:
         - a list of minimal positions for each level
         - a list of maximal positions for each level
         """
-        def fusion_prof(prof, newprof, shift, isright=True): 
+        def fusion_prof(prof, newprof, shift, isright=True):
             # fusion two profiles
-            size = max(len(prof), len(newprof))
             commsize = min(len(prof), len(newprof))
             choice = max if isright else min
             shift = shift if isright else -shift
@@ -74,7 +71,7 @@ class TreePlot:
             else:
                 l.extend([x + shift for x in newprof[commsize:]])
             return l
-            
+
         # Case of leaf
         if not t:
             return ((t.label(), []), []), [0], [0]
@@ -82,7 +79,8 @@ class TreePlot:
         # First, get all the info from subtrees
         stlist, lprof, rprof = [], [], []
         for st in t:
-            newst, stlprof, strprof = TreePlot.__compute_tree_profile(st, horiz)
+            newst, stlprof, strprof = TreePlot.__compute_tree_profile(st,
+                                                                      horiz)
             stlist.append(newst)
             lprof.append(stlprof)
             rprof.append(strprof)
@@ -128,9 +126,8 @@ class TreePlot:
             if len(rprof[i]) > len(maxprof):
                 maxprof.extend([x + pos[i] for x in rprof[i][len(maxprof):]])
 
-        # construct and return the result        
+        # construct and return the result
         return ((t.label(), pos), stlist), [0] + minprof, [0] + maxprof
-
 
     @staticmethod
     def get_layout(t: LabelledOrderedTree, horiz=0.7):
@@ -140,33 +137,33 @@ class TreePlot:
         and the values are coordinates. The layout has the root on the top. The
         tree should not have any repeated label, otherwise an error will be
         throwed.
-        
+
         INPUT:
         - ``tree``: a LabelledOrderedTree that we want to plot
         - ``horiz``: minimal gap betwee nodes, in unity of distance between two
         consecutive layers of nodes
         """
-        def depths(t, ddict, curd): # compute depth of each node
+        def depths(t, ddict, curd):  # compute depth of each node
             if t.label() in ddict:
                 raise ValueError('Tree should not have repeated labels')
             ddict[t.label()] = curd
             for st in t:
                 depths(st, ddict, curd + 1)
-        
-        def shifts(s, sdict, shift): # extract shift information
+
+        def shifts(s, sdict, shift):  # extract shift information
             l, sfts = s[0]
             sdict[l] = shift
             for i in range(len(sfts)):
                 shifts(s[1][i], sdict, shift + sfts[i])
-        
-        ddict = {} # dict for depth
+
+        ddict = {}  # dict for depth
         depths(t, ddict, 0)
         tshift = TreePlot.__compute_tree_profile(t, horiz)[0]
-        sdict = {} # dict for shift
+        sdict = {}  # dict for shift
         shifts(tshift, sdict, 0)
-        cdict = {} # dict for coordinates
+        cdict = {}  # dict for coordinates
         for label in ddict:
-            cdict[label] = (sdict[label], -ddict[label]) # root on top
+            cdict[label] = (sdict[label], -ddict[label])  # root on top
         return cdict
 
     @staticmethod
@@ -204,7 +201,7 @@ class TreePlot:
             stlist = t[1]
             for i in range(len(stlist)):
                 draw(l, stlist[i], x + shifts[i], y - opt['vert'], x, y, opt)
-        
+
         # convert to labeled ordered tree
         t = LabelledOrderedTree(tree)
         # compute the hierarchical shifting
@@ -213,7 +210,8 @@ class TreePlot:
         G = Graphics()
         G.set_aspect_ratio(1)
         # construct the dictionary for options
-        opt = {'radius': radius, 'fill': fill, 'thick': thickness, 'vert': vert,
+        opt = {'radius': radius, 'fill': fill,
+               'thick': thickness, 'vert': vert,
                'linec': linecolor, 'cfunc': colorfunc}
         # compute the graphics
         shapes = []
