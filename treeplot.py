@@ -47,7 +47,8 @@ class TreePlot:
         return dist + horiz
 
     @staticmethod
-    def __compute_tree_profile(t: LabelledOrderedTree, horiz: float):
+    def __compute_tree_profile(t: LabelledOrderedTree, horiz: float,
+                               radius: float):
         r"""
         Internal function, computes the relative position of children for each
         node and the profile of the whole tree from both sides.
@@ -80,8 +81,8 @@ class TreePlot:
         # First, get all the info from subtrees
         stlist, lprof, rprof = [], [], []
         for st in t:
-            newst, stlprof, strprof = TreePlot.__compute_tree_profile(st,
-                                                                      horiz)
+            stprof = TreePlot.__compute_tree_profile(st, horiz, radius)
+            newst, stlprof, strprof = stprof
             stlist.append(newst)
             lprof.append(stlprof)
             rprof.append(strprof)
@@ -110,12 +111,16 @@ class TreePlot:
         # then take the mean
         pos = [(lpos[i] + rpos[i]) / 2 for i in range(k)]
 
-        # Now center the root in the middle of the whole tree
+        # One possibility is to center the root in the middle of the whole tree
         # but not outside the interval of children
         subminpos = min([min(lprof[i]) + pos[i] for i in range(k)])
         submaxpos = max([max(rprof[i]) + pos[i] for i in range(k)])
-        rootpos = (subminpos + submaxpos) / 2
-        rootpos = min(max(0, rootpos), pos[-1])
+        rootpos1 = (subminpos + submaxpos) / 2
+        rootpos1 = min(max(0, rootpos1), pos[-1])
+        # another possibility is to center the root among its children
+        rootpos2 = pos[-1] / 2
+        # We average the two choices
+        rootpos = (rootpos1 + rootpos2) / 2
         pos = [x - rootpos for x in pos]
 
         # Compute min and max position for levels
@@ -127,11 +132,14 @@ class TreePlot:
             if len(rprof[i]) > len(maxprof):
                 maxprof.extend([x + pos[i] for x in rprof[i][len(maxprof):]])
 
+        # We add some gap when the first and the last children are too far
+        lgap = min(0, horiz + pos[0]) * radius
+        rgap = max(0, pos[-1] - horiz) * radius
         # construct and return the result
-        return ((t.label(), pos), stlist), [0] + minprof, [0] + maxprof
+        return ((t.label(), pos), stlist), [lgap] + minprof, [rgap] + maxprof
 
     @staticmethod
-    def get_layout(t: LabelledOrderedTree, horiz=0.7):
+    def get_layout(t: LabelledOrderedTree, horiz=0.7, radius=0.2):
         r"""
         Returns a dictionary of positions of nodes in the layout (not scaled to
         any given aspect ratio). The keys of the dictionary is the node labels,
@@ -159,7 +167,7 @@ class TreePlot:
 
         ddict = {}  # dict for depth
         depths(t, ddict, 0)
-        tshift = TreePlot.__compute_tree_profile(t, horiz)[0]
+        tshift = TreePlot.__compute_tree_profile(t, horiz, radius)[0]
         sdict = {}  # dict for shift
         shifts(tshift, sdict, 0)
         cdict = {}  # dict for coordinates
@@ -169,12 +177,13 @@ class TreePlot:
 
     @staticmethod
     def plot(tree, vert=1, horiz=0.7, radius=0.2, fill='lightblue',
-             thickness=1.5, linecolor='black', colorfunc=None):
+             thickness=1.5, linecolor='black', colorfunc=None, fontsize=10):
         r"""
         Returns a Graphics object that contains a plot of the given labeled
         tree
 
         INPUT:
+
         - ``tree``: a tree object, can be LabelledOrderedTree, OrderedTree, or
         simply a nested list representing a tree (with or without labels)
         - ``vert``: distances between nodes of consecutive depth
@@ -182,6 +191,13 @@ class TreePlot:
         - ``radius``: radius of nodes
         - ``fill``: fill color of nodes
         - ``thickness``: thickness of lines
+        - ``fontsize``: font size of labels in points
+
+        NOTE:
+
+        As this module is initially designed for unlabelled trees, When plotting
+        a labelled tree, it is usually not quite elegant. Users may want to
+        tweak the parameter to get better output.
         """
         def draw(objs, t, x, y, px, py, opt):
             label, shifts = t[0]
@@ -207,7 +223,7 @@ class TreePlot:
         # convert to labeled ordered tree
         t = LabelledOrderedTree(tree)
         # compute the hierarchical shifting
-        tshift = TreePlot.__compute_tree_profile(t, horiz)[0]
+        tshift = TreePlot.__compute_tree_profile(t, horiz, radius)[0]
         # initialize the graphics
         G = Graphics()
         G.set_aspect_ratio(1)
