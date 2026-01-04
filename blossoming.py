@@ -823,7 +823,7 @@ class TamariBlossomingTree:
                 if len(idx) != 2 or idx[1] - idx[0] != 1:
                     return False
             for st in tree:
-                if not st and not aux(st):  # an internal node failing the test
+                if st and not aux(st):  # an internal node failing the test
                     return False
             return True
         return aux(self.tree, isroot=True)
